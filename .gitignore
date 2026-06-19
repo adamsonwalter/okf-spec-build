@@ -1,0 +1,16 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary agent working files
+_lock_*
+*.tmp
+
+# Local session overrides (project-specific, not for sharing)
+LOCAL_OVERRIDES.MD

@@ -2,6 +2,8 @@
 
 **Open Knowledge Format v0.1 — Self-maintaining knowledge bundle for AI agent projects**
 
+**Source:** [github.com/adamsonwalter/okf-spec-build](https://github.com/adamsonwalter/okf-spec-build)
+
 Drop this into any Claude Cowork (or compatible AI agent) project to get a fully operational, continuously evolving knowledge graph from day one.
 
 ---
@@ -58,7 +60,7 @@ lowercase.md  = OKF concept documents (frontmatter required, type required, inde
 ### 1. Clone into your project
 
 ```bash
-git clone <this-repo> .
+git clone https://github.com/adamsonwalter/okf-spec-build .
 # or copy files into an existing project root
 ```
 

@@ -1,4 +1,6 @@
+---
 okf_version: "0.1"
+---
 
 # OKF Bundle Root
 
@@ -16,7 +18,7 @@ All types and relationships are governed by [ontology.md](ontology.md).
 
 ## Stubs
 
-*(populated by INDEX_AGENT as knowledge gaps are identified)*
+* [Trigger C Activation — External Scheduler](stubs/trigger-c-scheduler.md) — Known gap: the time-based decay trigger needs an external scheduler to fire.
 
 ## Reports
 

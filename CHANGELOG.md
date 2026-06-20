@@ -8,6 +8,19 @@ Format: [Semantic Versioning](https://semver.org) — MAJOR.MINOR.PATCH
 
 ---
 
+## [1.1.1] — 2026-06-19
+
+### Fixed
+- `index.md`: Wrapped the root `okf_version: "0.1"` declaration in `---` fences.
+  It was a bare line, so per SPEC §4.1 a strict parser read it as body text, not a
+  frontmatter block — the version declaration silently did not count.
+- `AGENTS.MD`: Reworded conformance rule #3. It previously asserted index.md has "NO
+  frontmatter (body only)", which contradicted the root index.md carrying `okf_version`.
+  Rule now states the SPEC §11 exception: only the bundle-root index.md may carry a single
+  fenced `okf_version` block.
+
+---
+
 ## [1.1.0] — 2026-06-19
 
 ### Added

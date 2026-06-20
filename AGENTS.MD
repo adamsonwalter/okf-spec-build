@@ -9,7 +9,9 @@
 OKF v0.1 hard rules (§9). A bundle is conformant when:
 1. Every non-reserved `.md` file has a parseable YAML frontmatter block.
 2. Every frontmatter block contains a non-empty `type` field. THIS IS THE ONLY REQUIRED FIELD.
-3. `index.md` files follow §6 format: NO frontmatter (body only), sections + bullet lists.
+3. `index.md` files follow §6 format: sections + bullet lists, no frontmatter — EXCEPT the
+   bundle-root `index.md`, which MAY carry a single fenced `okf_version` frontmatter block
+   (§11). That is the only place frontmatter is permitted in any `index.md`.
 4. `log.md` files follow §7 format: ISO 8601 date headings, newest-first, bold action verbs.
 
 Reserved filenames (must never be used as concept documents): `index.md`, `log.md`

@@ -4,6 +4,29 @@
 
 ---
 
+## CORE vs OPTIONAL (read first)
+
+This kit is split into a lean always-on **core** (this file + `ontology.md`,
+`index.md`, `log.md` — the six standard OKF fields) and an opt-in **T3 cognitive
+layer** in `optional/` (`LLM_WIKI.MD`, `FEEDBACK_LOOP.MD`, `ontology-ext.md`).
+
+- **Default (T1/T2) bundles:** run on core only. Agents create concept files with
+  `type`, `title`, `description`, `resource`, `tags`, `timestamp`. Conformance
+  checks V1, V2, V4 only. Do NOT emit `confidence`, `memory_tier`, supersession,
+  or contradiction records.
+- **T3 (liability-grade) bundles only:** also load the three files from
+  `optional/`. The enrichment/link/consumption/conformance agents then activate
+  their memory-tier, confidence, supersession, and decay behaviours, and V3/V5–V8
+  apply (see `optional/ontology-ext.md`).
+
+If the `optional/` files are not present in the bundle root, treat every
+optional-layer instruction below (confidence scoring, memory tiers, supersession,
+contradiction/decay handling) as inert.
+
+See `docs/OKF_DIVERGENCE.md` for how this dialect relates to vanilla OKF v0.1.
+
+---
+
 ## CONFORMANCE REFERENCE
 
 OKF v0.1 hard rules (§9). A bundle is conformant when:

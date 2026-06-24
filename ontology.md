@@ -43,6 +43,11 @@ and propose an addition via the ONTOLOGY_AGENT (see §EXTENDING).
 
 ## Memory & Governance Types (system-managed)
 
+> NOTE (v2.0): `Inference`, `Loop Health Report`, `Decay Report`, and
+> `Contradiction Record`, plus the `confidence`/`memory_tier` fields, belong to
+> the OPTIONAL T3 cognitive layer. A default (T1/T2) bundle does not use them.
+> Field and rule definitions live in `optional/ontology-ext.md`.
+
 | Type | Description | Created By |
 |---|---|---|
 | `Ontology` | This file. The bundle's type and relationship registry. | Human / ONTOLOGY_AGENT |
@@ -89,7 +94,7 @@ The label does NOT appear in the markdown link syntax — it appears as natural 
 
 All valid tags for the `tags` frontmatter field.
 Tags are lowercase, hyphenated. Agents MUST use registered tags.
-Unregistered tags trigger a Type Orphan gap flag (see LLM_WIKI.MD §GAP-FINDING).
+Unregistered tags trigger a Type Orphan gap flag (T3 only; see `optional/LLM_WIKI.MD` §GAP-FINDING).
 
 ## System Tags (reserved)
 

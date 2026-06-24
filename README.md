@@ -10,7 +10,7 @@ Drop this into any Claude Cowork (or compatible AI agent) project to get a fully
 
 ## What this is
 
-A four-file operating system that turns any project folder into a compounding knowledge base. Agents read the instruction files, build and maintain OKF-compliant markdown concept files, cross-link them into a knowledge graph, and keep everything current as new inputs arrive.
+An operating system that turns any project folder into a compounding knowledge base. Agents read the instruction files, build and maintain OKF-compliant markdown concept files, cross-link them into a knowledge graph, and keep everything current as new inputs arrive. The lean core handles most domains; an opt-in `optional/` layer adds confidence/memory machinery for liability-grade work.
 
 Based on:
 - [Google Cloud Open Knowledge Format v0.1](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md)
@@ -18,15 +18,30 @@ Based on:
 
 ---
 
+## Core vs optional
+
+This kit is split into a lean **core** (always used) and an opt-in **T3
+cognitive layer** in `optional/`. Evidence from real operating bundles showed the
+heavy layer left almost no trace in normal use, so it is now opt-in — see
+`docs/KIT_RESTRUCTURE.md`. For how this kit's dialect relates to the vanilla
+Google spec (and why the ontology is our convention, not an OKF requirement), see
+`docs/OKF_DIVERGENCE.md`.
+
 ## Files in this kit
 
-### Agent Instructions (ALL CAPS — not OKF concepts)
+### Core agent instructions (ALL CAPS — not OKF concepts)
 
 | File | Purpose |
 |---|---|
-| `AGENTS.MD` | Orchestration state machine. Six specialist agents with fixed execution order. |
-| `LLM_WIKI.MD` | Wiki operating model. Memory tiers, confidence scoring, supersession, gap-finding. |
-| `FEEDBACK_LOOP.MD` | Continuous synthesis loop. Trigger types, contradiction resolution, decay model. |
+| `AGENTS.MD` | Orchestration state machine. Specialist agents with fixed execution order. Core agents run on the six standard fields; optional behaviours activate only when `optional/` is loaded. |
+
+### Optional T3 cognitive layer (`optional/` — opt-in, liability-grade only)
+
+| File | Purpose |
+|---|---|
+| `optional/LLM_WIKI.MD` | Wiki operating model. Memory tiers, confidence scoring, supersession, gap-finding. |
+| `optional/FEEDBACK_LOOP.MD` | Continuous synthesis loop. Trigger types, contradiction resolution, decay model. |
+| `optional/ontology-ext.md` | Opt-in field definitions (`confidence`, `memory_tier`, …) and the V3/V5–V8 conformance rules they trigger. |
 
 ### OKF Concept Files (evolve per project)
 
@@ -66,7 +81,9 @@ git clone https://github.com/adamsonwalter/okf-spec-build .
 
 ### 2. Start a session in Claude Cowork
 
-Tell Claude: *"Read AGENTS.MD, LLM_WIKI.MD, FEEDBACK_LOOP.MD, and ontology.md, then ingest [your first document or topic]."*
+Default (T1/T2) — tell Claude: *"Read AGENTS.MD and ontology.md, then ingest [your first document or topic]."*
+
+T3 (liability-grade) — also copy the three files from `optional/` into the root and say: *"Read AGENTS.MD, ontology.md, and the files in optional/, then ingest …"*
 
 The agents will:
 - Extract concepts from your input
@@ -127,8 +144,8 @@ If you need to override agent behavior for a specific project, add a `PROJECT_OV
 | Component | Version |
 |---|---|
 | OKF Spec | 0.1 |
-| Bundle Bootstrap Kit | 1.0 |
-| Last updated | 2026-06-19 |
+| Bundle Bootstrap Kit | 2.0 |
+| Last updated | 2026-06-24 |
 
 ---
 

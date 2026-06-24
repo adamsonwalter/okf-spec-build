@@ -8,6 +8,39 @@ Format: [Semantic Versioning](https://semver.org) — MAJOR.MINOR.PATCH
 
 ---
 
+## [2.0.0] — 2026-06-24
+
+### Changed (BREAKING — file structure)
+- Demoted the runtime cognitive layer to opt-in. `LLM_WIKI.MD` and
+  `FEEDBACK_LOOP.MD` moved from root into `optional/`. Core stays at root
+  (`AGENTS.MD`, `ontology.md`, `index.md`, `log.md`) so the kit still drops into
+  a project root unchanged.
+- `AGENTS.MD`: added a "CORE vs OPTIONAL" banner. Optional-layer instructions
+  (confidence, memory tiers, supersession, decay) are inert unless `optional/`
+  files are present.
+- `README.md`: reworked file tables and quick-start for the core/optional split;
+  version bumped to 2.0.
+- `ontology.md`: annotated that `Inference`, `Loop Health Report`, `Decay
+  Report`, `Contradiction Record`, and the `confidence`/`memory_tier` fields are
+  optional-layer; their rules (V3, V5–V8) now live in `optional/ontology-ext.md`.
+
+### Added
+- `optional/ontology-ext.md`: opt-in field definitions and T3-gated conformance
+  rules (V3, V5–V8).
+- `optional/README.md`: how/when to enable the T3 layer.
+- `docs/OKF_DIVERGENCE.md`: spec floor vs. this kit's stricter dialect; the
+  read/write asymmetry; confirms the ontology is a kit convention, not an OKF
+  requirement.
+- `docs/KIT_RESTRUCTURE.md`: decision record behind this split, with operating-
+  repo evidence.
+
+### Migration
+- Existing T3 bundles: copy `optional/*` into the bundle root and instruct the
+  agent to read them, as before. T1/T2 bundles need no change — they were already
+  running on the six standard fields.
+
+---
+
 ## [1.1.1] — 2026-06-19
 
 ### Fixed

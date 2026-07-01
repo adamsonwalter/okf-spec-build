@@ -53,11 +53,13 @@ TRIGGER: Any of the following inputs:
   - A request to validate or audit the bundle for conformance
 
 ROUTING TABLE:
-  Input contains new knowledge or concepts  →  dispatch ENRICHMENT_AGENT
-  Input is a query or read request          →  dispatch CONSUMPTION_AGENT
-  Input is "validate" or "audit"            →  dispatch CONFORMANCE_AGENT
-  Input is "rebuild index" or "reindex"     →  dispatch INDEX_AGENT (standalone)
-  Input is "rebuild log" or "repair log"    →  dispatch LOG_AGENT (standalone)
+  Input contains new knowledge or concepts              →  dispatch ENRICHMENT_AGENT
+  Input is a query or read request                      →  dispatch CONSUMPTION_AGENT
+  Input is "validate" or "audit"                        →  dispatch CONFORMANCE_AGENT
+  Input is "rebuild index" or "reindex"                 →  dispatch INDEX_AGENT (standalone)
+  Input is "rebuild log" or "repair log"                →  dispatch LOG_AGENT (standalone)
+  Input is "build projection", "export", or "update projection"
+                                                        →  dispatch PROJECTION_AGENT
 
 SEQUENCING RULE:
   ENRICHMENT_AGENT always runs in this fixed order:
@@ -367,6 +369,108 @@ ACTION:
 
 ---
 
+## AGENT 7 — PROJECTION_AGENT
+
+```
+AGENT: PROJECTION_AGENT
+ROLE: Compile the structured bundle into flat Markdown projection files for upload to cloud LLM
+      environments (Gemini Gems, Claude.ai Projects, ChatGPT Projects, etc.).
+      Read-only over all concept files. Writes only to projections/.
+
+TRIGGER PHRASES (any of):
+  "build projection"          → full master projection (all concepts)
+  "build projection [tag]"    → tag-scoped slice (concepts matching one tag)
+  "update projection"         → rebuild existing projection from current bundle state
+  "export"                    → synonym for build projection
+
+PRECONDITION: At least one concept file must exist. Run after ENRICHMENT_AGENT completes
+  its full cycle (ENRICHMENT → LINK → INDEX → LOG) so the projection reflects committed state.
+
+─── STATE: SCAN ─────────────────────────────────────────────────────────────────
+ACTION:
+  1. Open log.md — read the date of the newest ## YYYY-MM-DD heading (LOG_HEAD).
+  2. Walk every .md file in the bundle tree.
+
+  EXCLUDE from projection (these files must NEVER appear in any projection):
+    - All index.md files (navigation — relative links break outside the repo)
+    - log.md (mutation history — not domain knowledge)
+    - All ALL_CAPS .md files: AGENTS.MD and any *_WIKI.MD, *_LOOP.MD etc. (agent instructions)
+    - Files in stubs/ (type: Stub — incomplete placeholders)
+    - Files in archive/ (superseded — not current knowledge)
+    - Files in projections/ (derived artifacts — never re-project a projection)
+
+  INCLUDE in projection:
+    - ontology.md (always first, regardless of any tag filter)
+    - All remaining concept .md files
+
+  For a TAG-SCOPED slice: apply tag filter AFTER the above exclusions.
+    Keep a concept if its `tags` frontmatter list includes the requested tag.
+    Always include ontology.md regardless of tag filter.
+
+─── STATE: COMPILE ──────────────────────────────────────────────────────────────
+ACTION:
+  Assemble the projection in this exact order:
+
+  ┌─ 1. SYNC HEADER (plain Markdown, NO YAML frontmatter) ─────────────────────┐
+  │                                                                               │
+  │  # <Bundle Title> — Knowledge Projection                                     │
+  │                                                                               │
+  │  | Field            | Value                                                 | │
+  │  |---|---|                                                                   │
+  │  | Generated        | <ISO 8601 datetime>                                   | │
+  │  | Scope            | master (all concepts) OR tag: <tag>                  | │
+  │  | Concepts included| <count of concept files, excluding ontology>          | │
+  │  | Log head         | <LOG_HEAD date>                                       | │
+  │  | Sync status      | Current if Generated >= Log head; STALE if not       | │
+  │                                                                               │
+  │  > **UPLOAD INSTRUCTIONS**: Upload THIS FILE ONLY to your cloud LLM Project  │
+  │  > (Gemini Gem, Claude.ai Project, ChatGPT Project). Do NOT upload index.md, │
+  │  > log.md, or individual concept files alongside it — this file already      │
+  │  > contains the ontology and all concepts.                                   │
+  │  > To update: regenerate this file and replace the existing upload.          │
+  │  > ONE FILE IN = ONE FILE OUT.                                               │
+  └────────────────────────────────────────────────────────────────────────────┘
+
+  ┌─ 2. §0 ONTOLOGY ────────────────────────────────────────────────────────────┐
+  │  Heading: ## §0 Ontology                                                     │
+  │  Body: full content of ontology.md with its YAML frontmatter STRIPPED.      │
+  │  Purpose: the consuming LLM learns the type/tag vocabulary before reading    │
+  │  any concept, so it can correctly interpret type and tags fields.            │
+  └────────────────────────────────────────────────────────────────────────────┘
+
+  ┌─ 3. CONCEPT SECTIONS (one per included concept file) ──────────────────────┐
+  │  Sort: alphabetically by title (from `title` frontmatter, fallback filename)│
+  │                                                                               │
+  │  For each concept:                                                            │
+  │    ## <title>                                                                 │
+  │    *Type: <type> | Tags: <tags joined by ", "> | Updated: <timestamp>*       │
+  │    <blank line>                                                               │
+  │    <full body of concept file — YAML frontmatter block STRIPPED>             │
+  │    <horizontal rule --- between concepts>                                     │
+  └────────────────────────────────────────────────────────────────────────────┘
+
+FRONTMATTER STRIP RULE:
+  Remove the opening --- line, all lines up to and including the closing --- line.
+  Retain everything after the closing ---. Do not alter body content.
+
+─── STATE: WRITE ────────────────────────────────────────────────────────────────
+ACTION:
+  Determine output path:
+    Master projection →  projections/<bundle-slug>-master.md
+    Tag slice         →  projections/by-tag/<tag>.md
+  Where <bundle-slug> = kebab-case version of the bundle root title.
+
+  Create projections/ and projections/by-tag/ directories if absent.
+  OVERWRITE any existing file at the output path without prompting.
+  Projection files are derived artifacts; the structured concept files are the source of truth.
+
+GATE_8: Does the output file exist at the correct path and contain the sync header?
+  YES → HALT with SUCCESS. Report: file path, concept count, generated datetime, log head.
+  NO  → HALT with ERROR. Report what prevented completion.
+```
+
+---
+
 ## BUNDLE INVARIANTS
 
 These rules apply at all times and override any agent instruction:
@@ -386,14 +490,26 @@ These rules apply at all times and override any agent instruction:
 
 ```
 <bundle-root>/
-├── AGENTS.MD               ← this file
-├── index.md                ← no frontmatter; bullet list of contents
-├── log.md                  ← no frontmatter; ISO 8601 date blocks, newest-first
+├── AGENTS.MD               ← this file (agent instructions — never indexed)
+├── index.md                ← no frontmatter; navigation index (never uploaded to cloud Projects)
+├── log.md                  ← no frontmatter; ISO 8601 date blocks, newest-first (never uploaded)
+├── ontology.md             ← type/tag registry; embedded §0 in every projection
 ├── <concept>.md            ← frontmatter with type; markdown body
-└── <subdirectory>/
-    ├── index.md            ← no frontmatter; subdirectory listing
-    └── <concept>.md
+├── <subdirectory>/
+│   ├── index.md            ← no frontmatter; subdirectory listing (never uploaded)
+│   └── <concept>.md
+└── projections/            ← DERIVED ARTIFACTS — flat exports for cloud LLM Projects
+    ├── <bundle-slug>-master.md   ← full bundle: ontology §0 + all concepts (ONE FILE TO UPLOAD)
+    └── by-tag/
+        └── <tag>.md        ← scoped slice: ontology §0 + concepts matching one tag
 ```
+
+**Two deployment modes from one build:**
+
+| Mode | Where | What to use | What NOT to upload |
+|---|---|---|---|
+| IDE / Claude Cowork | Local repo, Cursor, Antigravity | The full structured folder | — |
+| Cloud LLM Project | Gemini Gem, Claude.ai, ChatGPT | `projections/<bundle>-master.md` only | index.md, log.md, individual concept files, AGENTS.MD |
 
 ---
 
@@ -406,5 +522,7 @@ When no bundle exists yet:
 3. LINK_AGENT scans all newly written files → injects links.
 4. INDEX_AGENT generates root index.md (with `okf_version: "0.1"`) and any subdirectory index.md files.
 5. LOG_AGENT creates log.md with a `## YYYY-MM-DD` block recording all creations.
+6. PROJECTION_AGENT compiles `projections/<bundle-slug>-master.md` — the single file to upload
+   to any cloud LLM Project. Check the Sync Status field in its header to know when to regenerate.
 
-Result: a conformant OKF v0.1 bundle in one pass.
+Result: a conformant OKF v0.1 bundle in one pass, ready for both IDE and cloud LLM deployment.

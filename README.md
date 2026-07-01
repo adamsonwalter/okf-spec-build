@@ -18,6 +18,19 @@ Based on:
 
 ---
 
+## Two deployment modes from one build
+
+Every bundle built with this kit works in two modes simultaneously:
+
+| Mode | Where | What to use |
+|---|---|---|
+| **IDE / Agent** | Cursor, Antigravity, Claude Cowork, local git | Full structured folder — subfolders, cross-links, `index.md` navigation, live agent editing |
+| **Cloud LLM Project** | Gemini Gem, Claude.ai Project, ChatGPT Project | `projections/<bundle>-master.md` only — one flat file, self-contained, one swap to update |
+
+**Key rule for cloud Projects:** upload the master projection file **only**. Do not upload `index.md` (relative links break with no file system), `log.md`, individual concept files, or `AGENTS.MD`. The projection already embeds the ontology as §0 and all active concepts.
+
+See `playbook/PROJECTION_GUIDE.md` for full details.
+
 ## Core vs optional
 
 This kit is split into a lean **core** (always used) and an opt-in **T3
@@ -33,7 +46,7 @@ Google spec (and why the ontology is our convention, not an OKF requirement), se
 
 | File | Purpose |
 |---|---|
-| `AGENTS.MD` | Orchestration state machine. Specialist agents with fixed execution order. Core agents run on the six standard fields; optional behaviours activate only when `optional/` is loaded. |
+| `AGENTS.MD` | Orchestration state machine. 7 specialist agents: ENRICHMENT, LINK, INDEX, LOG, CONSUMPTION, CONFORMANCE, PROJECTION. |
 
 ### Optional T3 cognitive layer (`optional/` — opt-in, liability-grade only)
 
@@ -47,14 +60,15 @@ Google spec (and why the ontology is our convention, not an OKF requirement), se
 
 | File | Purpose |
 |---|---|
-| `ontology.md` | Single source of truth. Type registry, relationship taxonomy, tag vocabulary. |
-| `index.md` | Bundle root index. Auto-maintained by INDEX_AGENT. |
-| `log.md` | Mutation history. Auto-maintained by LOG_AGENT. |
+| `ontology.md` | Single source of truth. Type registry, relationship taxonomy, tag vocabulary. Embedded as §0 in every projection. |
+| `index.md` | Bundle root index. Auto-maintained by INDEX_AGENT. **Not for cloud Project upload.** |
+| `log.md` | Mutation history. Auto-maintained by LOG_AGENT. **Not for cloud Project upload.** |
 
 ### Directories
 
 | Directory | Purpose |
 |---|---|
+| `projections/` | **Flat-file exports for cloud LLM Projects.** PROJECTION_AGENT writes here. One master file = one upload. |
 | `stubs/` | Placeholder concepts for known knowledge gaps. |
 | `reports/` | Loop health reports and decay reports. |
 | `archive/` | Superseded concepts (never deleted, always traceable). |
@@ -123,6 +137,8 @@ Run `CONFORMANCE_AGENT` at any time by telling Claude: *"validate the bundle"*.
 |---|---|
 | Full enrichment cycle | "ingest [content]" |
 | Read-only query | "what does the bundle say about [topic]" |
+| **Build cloud projection** | **"build projection"** or **"update projection"** or **"export"** |
+| **Build tag-scoped slice** | **"build projection [tag]"** |
 | Bundle audit | "validate" or "audit the bundle" |
 | Rebuild index | "rebuild index" |
 | Repair log | "rebuild log" |

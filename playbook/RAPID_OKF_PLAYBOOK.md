@@ -82,7 +82,12 @@ pages. No processing yet — just collect. (variable, mostly your existing mater
 - T3: run the figure-extraction, depth/distance + other conflict sweeps, and build the regression set
   (reuse the Optus `tasks/03,05,06,10`).
 
-**Step 6 — Commit + tag a release.** `git add -A && git commit && git tag v1`. Done.
+**Step 6 — Build the projection.** Say: *"build projection"*. PROJECTION_AGENT compiles
+`projections/<bundle-slug>-master.md` — the single flat file that goes into a Gemini Gem,
+Claude.ai Project, or ChatGPT Project. Check the Sync Status field in its header; regenerate
+whenever the Log head advances past the Generated date.
+
+**Step 7 — Commit + tag a release.** `git add -A && git commit && git tag v1`. Done.
 
 After the first domain, steps 1–2 take under an hour; steps 4–6 are automated.
 
@@ -146,19 +151,20 @@ Cadence: weekly or whenever a batch accumulates. No daemons, no webhooks.
 ## 7. Cross-environment topology
 
 ```
-        author / refresh (local agent envs)              consume (cloud LLMs)
+        author / refresh (local agent envs)               consume (cloud LLMs)
    ┌───────────────────────────────────────┐      ┌───────────────────────────────┐
-   │ Cowork  ·  Cursor  ·  Antigravity      │      │ Claude Project · ChatGPT Proj │
-   │  - ingest inbox/                       │      │ Gemini Gem · Grok workspace   │
-   │  - run sweeps (T3)                     │      │  - load projections/*.md      │
-   │  - commit to git                       │      │  - cheap-model serving        │
-   └───────────────────┬───────────────────┘      └───────────────┬───────────────┘
-                       │   git push / pull (single source of truth) │
-                       └───────────────►  GitHub repo  ◄────────────┘
-                                   (per-domain bundle, tagged releases)
+   │ Cowork  ·  Cursor  ·  Antigravity      │      │ Claude.ai Project            │
+   │  - ingest inbox/                       │      │ Gemini Gem                   │
+   │  - "build projection" (PROJECTION_AGENT)│      │ ChatGPT Project              │
+   │  - run sweeps (T3)                     │      │                              │
+   │  - commit to git                       │      │ Upload: projections/          │
+   └───────────────────────────────────────┘      │   <bundle>-master.md ONLY    │
+                        │   git push / pull                │   (one file = one upload)     │
+                        └─────────────────────────────└─────────────────────────────┘
+                               GitHub repo (per-domain bundle, tagged releases)
 ```
 
-Principle: **author once locally, project outward.** Cloud tools never hold the master.
+Principle: **author once locally, project outward.** Cloud tools never hold the master; they hold a compiled snapshot. When the bundle updates, rebuild the projection and swap the file in the cloud Project.
 
 ---
 

@@ -17,22 +17,24 @@ Companion to RAPID_OKF_PLAYBOOK.md. Print this; run it per domain.
 Output of intake → register types/tags in `ontology.md`; save topic inventory as `TODO.md`.
 
 ## B. Setup checklist
-- [ ] `git clone kit <domain>`; confirm AGENTS.MD/LLM_WIKI.MD/FEEDBACK_LOOP.MD present
+- [ ] `git clone kit <domain>`; confirm AGENTS.MD present
 - [ ] Add `inbox/ projections/` if missing
 - [ ] Register domain types + tags in `ontology.md` (from intake Q4/Q5)
 - [ ] Save topic inventory to `TODO.md` (from Q6)
 - [ ] Drop sources into `inbox/`
-- [ ] Run: "Read AGENTS.MD, LLM_WIKI.MD, ontology.md; ingest inbox/"
+- [ ] Run: "Read AGENTS.MD, ontology.md; ingest inbox/"
 - [ ] Tier pass: T1 none · T2 provenance+light check · T3 figures+conflict sweeps+regression
+- [ ] **Run: "build projection"** → verify `projections/<bundle>-master.md` created
+- [ ] Upload `projections/<bundle>-master.md` to your cloud LLM Project (Gemini Gem / Claude.ai / ChatGPT)
 - [ ] `git add -A && git commit -m "v1 <domain>" && git tag v1`
-- [ ] Build first projection(s) → `projections/`; upload to your cloud tool(s)
 
 ## C. Per-update checklist (batch)
 - [ ] Drop new material in `inbox/`
 - [ ] Run "ingest inbox/"
 - [ ] Review any `<!-- CONFLICT -->` flags
 - [ ] (T3) extend regression set per new conflict/critical value
-- [ ] Re-project changed subsets; re-upload to cloud tools
+- [ ] **Run "update projection"** → check Sync Status header in `projections/<bundle>-master.md`
+- [ ] In your cloud Project: delete old projection upload, upload new file (one swap)
 - [ ] `git commit`
 
 ## D. Projection one-liner (filter by tag → single file)
@@ -43,6 +45,9 @@ title + source reference, newest first." Then upload that one file to the LLM's 
 - Hand-authoring concepts instead of batch-ingesting → let the pipeline write them.
 - Over-verifying T1/T2 work to T3 standard → match effort to consequence.
 - Editing the kit per domain → keep the kit frozen; vary only ontology + content.
+- **Uploading `index.md` to a cloud Project** → relative links break; use the projection instead.
+- **Uploading individual concept files** → hard to sync; one projection file is easier.
+- **Manually editing projection files** → they are derived; fix the source concept and regenerate.
 - Pushing the live repo into every LLM → push small projections instead.
 - One giant bundle for everything → one bundle PER domain; subset across with tags.
 

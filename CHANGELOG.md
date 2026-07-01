@@ -8,6 +8,23 @@ Format: [Semantic Versioning](https://semver.org) — MAJOR.MINOR.PATCH
 
 ---
 
+## [2.1.0] — 2026-06-24
+
+### Added (opt-in module — does not touch core)
+- `ontology-mapper/`: an OKF-customised kinetic ontology mapper, decoupled and opt-in
+  (removing the folder leaves the core kit unaffected, same as `optional/`).
+- `ontology-mapper/RELATIONSHIP-CROSSWALK.md`: the single coupling contract mapping the
+  mapper's gate-logic verbs onto the kit's ten-relationship taxonomy
+  (`crosswalk_version: 1` vs `okf_version: 0.1`).
+- **Seam B** — `ontology-mapper/pattern-library/`: a conformant OKF sub-bundle that turns
+  the mapper's pattern library into governed knowledge (own `ontology.md` registering
+  `Pattern`/`Action Type`/`Gate`, plus `index.md`, `log.md`, four seed patterns). Pattern
+  writeback now uses ENRICHMENT→LINK→INDEX→LOG instead of a flat log.
+
+### Notes
+- The general-purpose `kinetic-ontology-mapper` stays a standalone skill outside this repo.
+  This module is its specialised, OKF-coupled sibling; the duplication is intentional.
+
 ## [2.0.0] — 2026-06-24
 
 ### Changed (BREAKING — file structure)

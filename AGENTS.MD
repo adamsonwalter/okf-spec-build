@@ -222,7 +222,9 @@ ACTION:
   Write (or overwrite) index.md in each affected directory using this exact format:
 
   ═══ BUNDLE ROOT index.md FORMAT ═══════════════════════════════════════════════
+  ---
   okf_version: "0.1"
+  ---
 
   # <Directory or Bundle Name>
 

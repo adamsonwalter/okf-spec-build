@@ -8,6 +8,66 @@ Format: [Semantic Versioning](https://semver.org) — MAJOR.MINOR.PATCH
 
 ---
 
+## [2.3.0] — 2026-07-03
+
+### Added — new protocol (generalised from a live bundle bug)
+- `ontology.md`: new **§Source Coverage Contracts** section (v0.2 → v0.3) — a registry
+  distinct from §Deliverable Parity Contracts: that section catches concept→deliverable
+  drift; this one catches source-document→bundle *omission*, which involves no deliverable
+  at all. New type `Coverage Ledger` (Memory & Governance Types, marked CORE not
+  optional-layer — applies at every effort tier) and tag `coverage` (System Tags). Empty
+  template row + one illustrative worked example (not a live contract in the seed
+  ontology). Format: Contract ID, Coverage ledger file, Source document, Identity key,
+  Severity.
+- `AGENTS.MD` — `ORCHESTRATOR`: routing table now splits ingestion into **SOURCE-DOCUMENT
+  MODE** (a whole document — PDF, report, transcript, or re-ingestion) vs **NOTE MODE** (a
+  short note or single fact). Only the former triggers the new mandatory step below.
+- `AGENTS.MD` — `ENRICHMENT_AGENT`: new `STATE: INVENTORY` (SOURCE-DOCUMENT MODE only,
+  runs immediately after `STATE: INGEST`, before `STATE: MAP`) — a mechanical,
+  structure-driven enumeration of every named unit in the source (Box/Table/Figure/
+  callout/appendix/case), written into a `type: Coverage Ledger` concept BEFORE a single
+  concept is extracted. New `GATE_1-INVENTORY` (the enumeration must be built by walking
+  the source's own structure, not by recalling what stood out) and new `GATE_5-COVERAGE`
+  (after all MUTATE_CREATE/MUTATE_UPDATE work, blocks handoff to LINK_AGENT/LOG_AGENT
+  while any ledger row remains "Not yet checked").
+- `AGENTS.MD` — `CONFORMANCE_AGENT`: new `CHECK_9` — opens every registered ledger and
+  names any row not marked Captured/N/A. Distinct from CHECK_7 (deliverable drift vs
+  source omission). Skipped (not failed) when no contracts exist. Positioned as a safety
+  net for bundles predating this mechanism — the primary defence is now GATE_5-COVERAGE
+  at ingestion time, not an audit someone remembers to run.
+- `AGENTS.MD` — `BUNDLE INVARIANTS`: new invariant #11 (a SOURCE-DOCUMENT MODE ingestion
+  is not complete while its Coverage Ledger has any unresolved row; NOTE MODE is exempt).
+- `AGENTS.MD` — `QUICK-START FOR NEW BUNDLE`: new step 1b — STATE: INVENTORY runs before
+  concept extraction on any whole-document ingestion.
+- `playbook/RAPID_OKF_PLAYBOOK.md`: new **Step 4a** (coverage ledger on whole-document
+  ingests, all tiers) alongside the existing Step 6b (deliverable parity) pattern.
+- `playbook/OKF_QUICKSTART.md`: setup/update checklists and anti-patterns note the
+  coverage-ledger step.
+- `README.md`: conformance checklist and Agent Reference table both note the new
+  coverage-ledger mechanism.
+
+### Root cause this fixes
+- In the `directors-guide-ai-governance` bundle, a canonical re-ingestion of a 56-page
+  source PDF involved a full sequential read, yet still omitted four recurring
+  "Questions for directors to ask" / "Governance red flags" boxes — because a single
+  self-review pass is correlated with its own blind spots: it notices what looks
+  substantively new and silently deprioritises what looks repetitive, even when the
+  latter is real, required content. No existing CHECK (1–8) could have caught this, because
+  every one of them validates internal bundle consistency, never completeness against the
+  source document. An independent second review caught the initial gap; building a
+  coverage ledger to close it then surfaced three further omissions mechanically, without
+  a third re-read. This release makes "did we capture everything" a structural gate any
+  SOURCE-DOCUMENT MODE ingestion must pass — a table diff, not a hope that the next
+  re-read is more careful than the last — structural across every future bundle built from
+  this kit, not a one-off patch to a single project.
+
+### Notes
+- No breaking change to existing agent contracts — CHECK_9, GATE_1-INVENTORY, and
+  GATE_5-COVERAGE are no-ops for NOTE MODE ingestion and for any bundle with zero
+  registered Source Coverage Contracts (the overwhelming majority, until first use).
+
+---
+
 ## [2.2.2] — 2026-07-03
 
 ### Added

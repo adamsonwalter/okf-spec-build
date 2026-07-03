@@ -5,7 +5,7 @@ description: Single source of truth for all concept types, relationship semantic
 memory_tier: semantic
 confidence: 1.0
 okf_version: "0.1"
-timestamp: 2026-07-03T00:00:00Z
+timestamp: 2026-07-03T05:26:26Z
 tags: [ontology, system, governance]
 ---
 
@@ -47,6 +47,13 @@ and propose an addition via the ONTOLOGY_AGENT (see §EXTENDING).
 > `Contradiction Record`, plus the `confidence`/`memory_tier` fields, belong to
 > the OPTIONAL T3 cognitive layer. A default (T1/T2) bundle does not use them.
 > Field and rule definitions live in `optional/ontology-ext.md`.
+>
+> NOTE (v0.3): `Coverage Ledger` is the one exception — it is CORE, not
+> optional-layer, and applies at every effort tier (T1/T2/T3). It is a
+> completeness check (was everything captured?), not a correctness or
+> confidence mechanism (is it right?), so it carries none of the T3
+> confidence/memory-tier machinery and costs nothing extra for a T1 bundle to
+> use on a whole-document ingestion.
 
 | Type | Description | Created By |
 |---|---|---|
@@ -57,6 +64,7 @@ and propose an addition via the ONTOLOGY_AGENT (see §EXTENDING).
 | `Loop Health Report` | Periodic diagnostic snapshot of bundle health metrics. | LOG_AGENT |
 | `Decay Report` | List of stale, isolated, or low-confidence concepts. | CONFORMANCE_AGENT |
 | `Contradiction Record` | A logged contradiction event and its resolution. | ENRICHMENT_AGENT |
+| `Coverage Ledger` | An exhaustive inventory of every named structural unit in a source document (Box/Table/Figure/callout/appendix/quote), mapped to the bundle file(s) that capture it, with a Status column (Captured / Partial / N/A / Not yet checked). Built by ENRICHMENT_AGENT's `STATE: INVENTORY` on every SOURCE-DOCUMENT MODE ingestion — the mechanical completeness gate that checks whether everything was captured, distinct from correctness checks on what *is* captured. | ENRICHMENT_AGENT (STATE: INVENTORY) |
 
 ## Project-Specific Types
 
@@ -107,6 +115,7 @@ Unregistered tags trigger a Type Orphan gap flag (T3 only; see `optional/LLM_WIK
 | `archived` | Superseded or deprecated |
 | `inference` | Agent-derived, not directly sourced |
 | `disputed` | Contains an unresolved contradiction |
+| `coverage` | A Coverage Ledger or other bundle-completeness audit artifact |
 
 ## Domain Tags
 
@@ -203,6 +212,62 @@ from this kit — not just the one where the gap was first found.
 
 ---
 
+# Source Coverage Contracts
+
+> **Not the same problem as Deliverable Parity Contracts, above.** That section catches
+> *concept → hand-authored deliverable* drift (a snapshot embedded in an HTML/JS artifact
+> going stale after the source concepts change). This section catches a different failure:
+> *source document → bundle* drift, where a named unit in the original source (a Box, Table,
+> Figure, recurring callout, appendix, or cited case) was simply never transcribed into any
+> concept file in the first place. There is no deliverable involved — the miss is in
+> ENRICHMENT_AGENT's own INGEST/MAP pass, not in a downstream artifact. A bundle can be
+> perfectly internally-conformant (every CHECK_1–8 passes) while still failing this, because
+> none of those checks ever look back at the source document.
+>
+> **Enforced at ingestion time, not just audited afterwards.** AGENTS.MD §ENRICHMENT_AGENT's
+> `STATE: INVENTORY` and `GATE_5-COVERAGE` make building this ledger a mandatory, blocking
+> step of any SOURCE-DOCUMENT MODE ingestion — the pipeline cannot hand off to
+> LINK_AGENT/LOG_AGENT while any ledger row is unresolved. CHECK_9 (AGENTS.MD
+> §CONFORMANCE_AGENT) is the safety net for a bundle predating this mechanism, or a session
+> that skipped STATE: INVENTORY — it is not the primary defence.
+
+**Format** — one row per source document being tracked for bundle completeness:
+
+| Field | Meaning |
+|---|---|
+| `Contract ID` | Short slug identifying the contract. |
+| `Coverage ledger file` | Path to the `type: Coverage Ledger` concept enumerating every named unit in the source. |
+| `Source document` | The source PDF/text being tracked (with version/date). |
+| `Identity key` | How ONE row in the ledger maps to ONE structural unit in the source (a Box/Table/Figure number, a page-anchored callout label, an appendix letter). |
+| `Severity` | `ERROR` if an uncaptured unit would misrepresent the source's scope to a reader relying on the bundle as complete (e.g. a director-facing checklist item, a safety procedure, a compliance clause); `WARNING` if cosmetic (e.g. a front-matter foreword). |
+
+| Contract ID | Coverage ledger file | Source document | Identity key | Severity |
+|---|---|---|---|---|
+| *(none at bundle initialisation — register the first time a whole source document is ingested; see worked example below)* | — | — | — | — |
+
+**Worked example** (illustrative only — this is not a live contract in this seed ontology; shown
+so a domain builder can copy the pattern exactly):
+
+| Contract ID | Coverage ledger file | Source document | Identity key | Severity |
+|---|---|---|---|---|
+| `directors-guide-coverage` | `errata/source-coverage-ledger.md` | *A Director's Guide to AI Governance* (AICD/HTI, v2, June 2026) | Box N / Table N / Figure N / page-anchored callout label / Appendix letter | ERROR |
+
+This is the exact fix applied retroactively to the `directors-guide-ai-governance` bundle after
+its 2026-07-03 canonical re-ingestion — despite a full sequential read of a 56-page source PDF —
+still omitted four recurring "Questions for directors to ask" / "Governance red flags" boxes
+entirely, plus three further named units (a "Ways boards can harness AI" box, an illustrative
+example box, and a closing outlook section) that only surfaced once an exhaustive enumeration was
+built after the fact. Root cause: a single self-review pass is correlated with its own blind
+spots — it notices what looks substantively interesting and silently deprioritises what looks
+repetitive or formulaic, even when the latter is real, required content. A second, independent
+review caught the initial gap; building the ledger to close it then surfaced the rest
+mechanically, without anyone re-reading the source a third time. See CHANGELOG.md [2.3.0] and
+AGENTS.MD §ENRICHMENT_AGENT (`STATE: INVENTORY`, `GATE_5-COVERAGE`) / §CONFORMANCE_AGENT
+(`CHECK_9`) for how this is now enforced unconditionally, at ingestion time and at audit time,
+for every bundle built from this kit — not just the one where the gap was first found.
+
+---
+
 # ONTOLOGY_AGENT — Extension Protocol
 
 When ENRICHMENT_AGENT encounters an unregistered `type` or `tag`, it does NOT silently
@@ -250,3 +315,4 @@ types in existing concept files should flag for migration, not auto-migrate.
 |---|---|---|
 | 0.1 | 2026-06-19 | Initial ontology for bundle bootstrap kit |
 | 0.2 | 2026-07-03 | Added **§Deliverable Parity Contracts** — an opt-in registry for hand-authored interactive deliverables that embed a denormalized snapshot of a concept subdirectory. Generalises a bundle-specific fix (`privacy-act-okf` scenario/decision-map drift) into a reusable kit pattern. Empty template + one illustrative worked example; no live contract in this seed ontology. Paired with AGENTS.MD changes enforcing it at write time (ENRICHMENT_AGENT) and audit time (CONFORMANCE_AGENT CHECK_7). No new types/tags. |
+| 0.3 | 2026-07-03 | Added type `Coverage Ledger` (Memory & Governance Types) and tag `coverage` (System Tags), plus new **§Source Coverage Contracts** — a *different* completeness mechanism from §Deliverable Parity Contracts: that section catches concept→deliverable drift; this one catches source-document→bundle omission, which involves no deliverable at all. Generalises a bundle-specific fix (`directors-guide-ai-governance` re-ingestion silently omitting four recurring content boxes despite a full sequential read) into a reusable kit pattern. Empty template + one illustrative worked example; no live contract in this seed ontology. Paired with AGENTS.MD changes enforcing it at ingestion time (ENRICHMENT_AGENT `STATE: INVENTORY` + `GATE_5-COVERAGE`, mandatory in the new SOURCE-DOCUMENT MODE) and audit time (CONFORMANCE_AGENT CHECK_9). See CHANGELOG.md [2.3.0]. |

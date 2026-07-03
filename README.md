@@ -75,6 +75,7 @@ Google spec (and why the ontology is our convention, not an OKF requirement), se
 |---|---|
 | `projections/` | **Flat-file exports for cloud LLM Projects.** PROJECTION_AGENT writes here. One master file = one upload. Fully regenerated every run — cannot drift. |
 | `deliverables/` | **Optional, per-domain.** Hand-authored client artifacts (interactive HTML tools, dashboards) that PROJECTION_AGENT cannot produce. If one embeds its own snapshot of concept data, it MUST be registered as a Deliverable Parity Contract in `ontology.md` — see below. Hand-edited, so it CAN drift if the contract is skipped. |
+| `errata/` (or `coverage/`) | **Created automatically the first time a whole document is ingested.** Holds `type: Coverage Ledger` concepts — the enumeration `STATE: INVENTORY` builds before any concept is written, registered as a Source Coverage Contract in `ontology.md`. |
 | `stubs/` | Placeholder concepts for known knowledge gaps. |
 | `reports/` | Loop health reports and decay reports. |
 | `archive/` | Superseded concepts (never deleted, always traceable). |
@@ -153,6 +154,9 @@ This kit produces bundles conformant with OKF v0.1 (§9):
 - ✅ `log.md` uses ISO 8601 date headings, newest-first; not placeholder-only (CHECK_8)
 - ✅ (if any are registered) every Deliverable Parity Contract's source concept files and
   deliverable records are in 1:1 correspondence, by identity key — not just by count
+- ✅ (if any are registered) every Source Coverage Contract's ledger has zero rows left
+  "Not yet checked" — every named unit in a whole-document ingestion was captured, enforced
+  at ingestion time by `STATE: INVENTORY` / `GATE_5-COVERAGE`, not just audited after (CHECK_9)
 
 Run `CONFORMANCE_AGENT` at any time by telling Claude: *"validate the bundle"*.
 
@@ -173,6 +177,7 @@ Run `CONFORMANCE_AGENT` at any time by telling Claude: *"validate the bundle"*.
 | Check staleness | "check for stale concepts" |
 | Extend ontology | Automatic when agent encounters unregistered type |
 | **Register a deliverable parity contract** | Automatic the moment a hand-authored `deliverables/` artifact embedding concept data is built — or say **"register deliverable parity"** |
+| **Whole-document ingest (PDF, report, transcript)** | Automatic — orchestrator dispatches SOURCE-DOCUMENT MODE, which runs `STATE: INVENTORY` (builds/updates a Coverage Ledger) before writing any concept, and blocks completion (`GATE_5-COVERAGE`) until every ledger row is resolved |
 
 ---
 
@@ -189,7 +194,7 @@ If you need to override agent behavior for a specific project, add a `PROJECT_OV
 | Component | Version |
 |---|---|
 | OKF Spec | 0.1 |
-| Bundle Bootstrap Kit | 2.2.2 |
+| Bundle Bootstrap Kit | 2.3.0 |
 | Last updated | 2026-07-03 |
 
 ---

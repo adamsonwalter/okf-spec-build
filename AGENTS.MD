@@ -53,7 +53,18 @@ TRIGGER: Any of the following inputs:
   - A request to validate or audit the bundle for conformance
 
 ROUTING TABLE:
-  Input contains new knowledge or concepts              →  dispatch ENRICHMENT_AGENT
+  Input is a whole/large source document (PDF, report, multi-page transcript,
+  or an explicit re-ingestion of a previously-ingested source) — i.e. it has,
+  or plausibly has, its own named structural units (headings, numbered/
+  lettered boxes, tables, figures, appendices, case studies) that a partial
+  read could miss                                       →  dispatch ENRICHMENT_AGENT
+                                                            in SOURCE-DOCUMENT MODE
+                                                            (STATE: INVENTORY and
+                                                            GATE_5-COVERAGE are
+                                                            mandatory — see AGENT 1)
+  Input is a short note, single fact, correction, or                        →  dispatch ENRICHMENT_AGENT
+  fragment with no internal structure worth inventorying                     in NOTE MODE (STATE:
+                                                                               INVENTORY skipped)
   Input is a query or read request                      →  dispatch CONSUMPTION_AGENT
   Input is "validate" or "audit"                        →  dispatch CONFORMANCE_AGENT
   Input is "rebuild index" or "reindex"                 →  dispatch INDEX_AGENT (standalone)
@@ -107,13 +118,59 @@ OUTPUT: MUTATION_MANIFEST (list of files created/updated, with paths)
 
 ─── STATE: INGEST ───────────────────────────────────────────────────────────────
 ACTION:
+  Determine INGEST_MODE before doing anything else:
+    SOURCE-DOCUMENT MODE — the input is a whole document with its own internal
+      structure (a PDF, report, multi-page transcript, or an explicit re-ingestion
+      of a previously-ingested source).
+    NOTE MODE — the input is a short note, single fact, correction, or fragment
+      with no internal structure worth inventorying.
+  When in doubt, prefer SOURCE-DOCUMENT MODE — the cost of an unnecessary inventory
+  pass is small; the cost of silently skipping one on a real document is a
+  completeness gap that no later CHECK will catch on its own (see GATE_5-COVERAGE).
+
   Parse the incoming input.
   Extract discrete concepts and named entities.
   For each concept, determine: name, type, description, relationships.
 
 GATE_1: Were one or more discrete concepts successfully extracted?
-  YES → proceed to MAP
+  YES → SOURCE-DOCUMENT MODE: proceed to INVENTORY.
+        NOTE MODE: proceed directly to MAP.
   NO  → HALT. Respond: "No extractable concepts found. Provide structured input."
+
+─── STATE: INVENTORY (SOURCE-DOCUMENT MODE ONLY — skipped entirely in NOTE MODE) ─
+ACTION:
+  This state exists because a single read-through, no matter how thorough, is
+  liable to notice what looks substantively interesting and silently deprioritise
+  what looks repetitive or formulaic — even when the latter is real, required
+  content (e.g. a recurring "Questions to ask" box that appears identically several
+  times in the source). Reading comprehension and completeness are different
+  skills; this state is a mechanical substitute for the second one.
+
+  Before writing or updating a single concept file, walk the ENTIRE source and
+  enumerate every named structural unit it contains — every heading, numbered or
+  lettered box/callout, table, figure, appendix, case study, boxed quote, and any
+  other visually or structurally distinct unit the source itself labels or sets
+  apart. Enumerate by walking the document's own structure (its table of contents,
+  numbering, headings) — NOT by recalling what stood out while reading. Do not
+  filter this list by perceived importance; that judgement is applied later, in
+  MUTATE_CREATE/MUTATE_UPDATE, not here.
+
+  Load the existing `type: Coverage Ledger` concept for this source if one exists
+  (re-ingestion), or create one (first ingestion) — conventionally at
+  `errata/<source-slug>-coverage-ledger.md` or `coverage/<source-slug>.md`. Write or
+  confirm one row per enumerated unit with a Status of Captured / Partial / N/A /
+  "Not yet checked" (new units default to "Not yet checked").
+
+  Register a Source Coverage Contract for this source in ontology.md §Source
+  Coverage Contracts if one is not already registered (first ingestion only).
+
+GATE_1-INVENTORY: Was the enumeration built by mechanically walking the source's
+  own structure (contents/numbering/headings), not by recalling what stood out?
+  YES → proceed to MAP. The inventory (not unaided re-reading judgement) now
+        drives which concepts MUTATE_CREATE/MUTATE_UPDATE must produce.
+  NO  → HALT. Redo the inventory pass structurally — list every Box N, Table N,
+        Figure N, page-anchored recurring callout, and appendix letter the source
+        itself labels, before extracting or writing a single concept.
 
 ─── STATE: MAP ──────────────────────────────────────────────────────────────────
 ACTION:
@@ -198,6 +255,18 @@ GATE_4: Is the updated file parseable with a valid `type` field intact?
 GATE_4-PARITY: Same check as GATE_3-PARITY, in reverse — if this update MOVES a file out of a
   contracted `Source scope` (archived to `archive/`, retitled, deleted), the matching record in
   the `Deliverable file` must be removed or annotated stale in the SAME batch.
+
+GATE_5-COVERAGE (SOURCE-DOCUMENT MODE ONLY — not applicable in NOTE MODE): Once all
+  MUTATE_CREATE/MUTATE_UPDATE work for this batch is done, does every row in this
+  source's Coverage Ledger (built in STATE: INVENTORY) show Status "Captured",
+  "Partial", or "N/A" — none left as "Not yet checked"?
+  YES → this ENRICHMENT pass may hand MUTATION_MANIFEST to LINK_AGENT.
+  NO  → HALT. Do NOT proceed to LINK_AGENT/INDEX_AGENT/LOG_AGENT. List the
+        unresolved rows by name and return to MUTATE_CREATE/MUTATE_UPDATE for
+        those specific units. "I read the whole source" is not evidence of
+        completeness — an unresolved row is. An ingestion in SOURCE-DOCUMENT MODE
+        is not finished while GATE_5-COVERAGE fails, no matter how much of the
+        source was read or how many concepts were written.
 ```
 
 ---
@@ -411,6 +480,20 @@ CHECK_8  log.md body is NOT placeholder-only (no sole line like "populated by LO
          with zero ## YYYY-MM-DD date blocks). FAIL if placeholder-only and any concept file,
          kit infrastructure file, or CHANGELOG.md version entry post-dates initialization —
          the log was not maintained. Repair: run LOG_AGENT standalone ("repair log").
+CHECK_9  For EVERY row in ontology.md §Source Coverage Contracts: open the named
+         `Coverage ledger file` (a `type: Coverage Ledger` concept) and NAME any row whose
+         Status is not `Captured` or `Not applicable` — these are live gaps between the
+         source document and the bundle. This is a DIFFERENT failure mode from CHECK_7: a
+         CHECK_7 fail means a hand-authored deliverable drifted from concepts that already
+         exist in the bundle; a CHECK_9 fail means a unit of the *original source document*
+         was never turned into a concept in the first place, so there is nothing yet for a
+         deliverable to drift from. Skip CHECK_9 entirely (not a fail) if the contracts table
+         has no rows. CONFORMANCE_AGENT checks the ledger's Status column only — it does NOT
+         re-derive the ledger from the source document itself; that re-verification is
+         ENRICHMENT_AGENT's responsibility (STATE: INVENTORY) when a source is first, or re-,
+         ingested. A CHECK_9 fail should not normally occur if STATE: INVENTORY /
+         GATE_5-COVERAGE were followed — it exists as a safety net for bundles predating this
+         mechanism, or a session that skipped SOURCE-DOCUMENT MODE.
 
 ─── STATE: REPORT ───────────────────────────────────────────────────────────────
 ACTION:
@@ -425,13 +508,18 @@ ACTION:
                  scenarios/scenario-i-*.md have no matching record in
                  deliverables/app-1-7-trigger-test-decision-map.html (missing ids: H, I).
   FAIL  CHECK_8  log.md is placeholder-only — no ## date blocks despite kit mutations.
+  FAIL  CHECK_9  Contract `<slug>-coverage`: coverage/<slug>.md has 3 rows still "Not yet
+                 checked" (Box 4, Box 8, "Over the horizon") — source units never captured.
   ...
   ─────────────────────────────────────────────────────
   STATUS: NON-CONFORMANT — 1 failure, 1 warning
   Run ENRICHMENT_AGENT or INDEX_AGENT to repair flagged files. A CHECK_7 failure is repaired by
   hand-editing the named `Deliverable file` to add/remove the named record(s) — PROJECTION_AGENT
   cannot fix this; it never writes to `deliverables/`. A CHECK_8 failure is repaired by
-  LOG_AGENT ("repair log") backfilling from git history or CHANGELOG.md, then appending going forward.
+  LOG_AGENT ("repair log") backfilling from git history or CHANGELOG.md, then appending going
+  forward. A CHECK_9 failure is repaired by re-dispatching ENRICHMENT_AGENT in SOURCE-DOCUMENT
+  MODE against the still-unresolved rows named in the report — MUTATE_CREATE/MUTATE_UPDATE for
+  those specific units, then re-run GATE_5-COVERAGE.
 ```
 
 ---
@@ -558,6 +646,11 @@ These rules apply at all times and override any agent instruction:
    PROJECTION_AGENT (it only writes `projections/`, never `deliverables/`). This is unconditional:
    it applies to every create/retire event inside the contract's `Source scope`, not just changes
    that "seem significant enough" to warrant it.
+11. **A SOURCE-DOCUMENT MODE ingestion is not complete while its Coverage Ledger has any row
+   not marked Captured/Partial/N/A.** Completeness is verified against a mechanically-built
+   enumeration (STATE: INVENTORY), never asserted on the strength of having read the whole
+   source. NOTE MODE ingestions (a short note, single fact, or correction) are exempt — this
+   invariant only binds once STATE: INVENTORY has run. See GATE_5-COVERAGE.
 
 ---
 
@@ -637,6 +730,12 @@ When cloning this kit into a new domain repo (or starting from scratch):
 0. Replace `log.md` with `templates/log-domain-init.md` — fill in today's date and the
    domain name. Do not keep the kit's own release history in a domain bundle.
 1. OKF_ORCHESTRATOR receives input.
+1b. IF the input is a whole source document (not a short note): ENRICHMENT_AGENT
+    runs STATE: INVENTORY first — a mechanical, structure-driven enumeration of
+    every named unit in the source (Box/Table/Figure/callout/appendix/case),
+    written into a `type: Coverage Ledger` concept — BEFORE extracting a single
+    concept. This is what GATE_5-COVERAGE checks against before the batch can
+    complete; see §Source Coverage Contracts in ontology.md.
 2. ENRICHMENT_AGENT extracts concepts → writes concept .md files.
 3. LINK_AGENT scans all newly written files → injects links.
 4. INDEX_AGENT generates root index.md (with `okf_version: "0.1"`) and any subdirectory index.md files.

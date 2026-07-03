@@ -24,6 +24,8 @@ Output of intake → register types/tags in `ontology.md`; save topic inventory 
 - [ ] Save topic inventory to `TODO.md` (from Q6)
 - [ ] Drop sources into `inbox/`
 - [ ] Run: "Read AGENTS.MD, ontology.md; ingest inbox/"
+- [ ] For whole-document sources: confirm a Coverage Ledger was built (STATE: INVENTORY)
+      and every row resolved (GATE_5-COVERAGE) before treating the ingest as done — all tiers
 - [ ] Tier pass: T1 none · T2 provenance+light check · T3 figures+conflict sweeps+regression
 - [ ] **Run: "build projection"** → verify `projections/<bundle>-master.md` created
 - [ ] Upload `projections/<bundle>-master.md` to your cloud LLM Project (Gemini Gem / Claude.ai / ChatGPT)
@@ -55,5 +57,10 @@ title + source reference, newest first." Then upload that one file to the LLM's 
 - One giant bundle for everything → one bundle PER domain; subset across with tags.
 - **`git commit` without updating `log.md`** → LOG_AGENT must run before every commit (ingest
   pipeline or `"repair log"` / `"append log"`). See `playbook/BUNDLE_COMMIT_CHECKLIST.md`.
+- **Trusting a single read-through of a whole source document** → even a careful read
+  deprioritises repetitive/formulaic content in favour of what looks substantively new.
+  STATE: INVENTORY builds a mechanical, structure-driven enumeration first; GATE_5-COVERAGE
+  blocks the ingest from completing until every row is resolved. Don't skip it because the
+  document "felt" fully read.
 
 © 2026 Walter Adamson | BHP 20 years, Head IT Audit - IT Strategy - Corporate Planning - International Bus Development | 100+ AI workflow solutions delivered | linkedin.com/in/adamson | walter@outcomesnow.com

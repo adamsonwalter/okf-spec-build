@@ -86,6 +86,17 @@ pages. No processing yet — just collect. (variable, mostly your existing mater
 *"Read AGENTS.MD, LLM_WIKI.MD, ontology.md, then ingest everything in inbox/."* The ENRICHMENT→LINK
 →INDEX→LOG pipeline writes concept files in one pass. (minutes of agent time per batch)
 
+**Step 4a — Coverage ledger (every whole-document source, every tier).** The moment Step 4
+ingests a whole document (not a short note), ENRICHMENT_AGENT runs `STATE: INVENTORY` before
+writing a single concept: it mechanically enumerates every named unit the source labels — Box
+N, Table N, Figure N, recurring callouts, appendices, case studies — into a `type: Coverage
+Ledger` concept, and registers a Source Coverage Contract in `ontology.md` on first ingestion.
+`GATE_5-COVERAGE` then blocks the batch from completing while any row is still "Not yet
+checked." This is unrelated to the tier-gated fact-checking in Step 5 below — it doesn't ask
+"is this correct," only "did we notice it exists" — so it costs almost nothing and applies even
+at T1. (This step exists because it was skipped once, on a full sequential read of a 56-page
+source, and still missed four recurring content boxes — see CHANGELOG.md [2.3.0].)
+
 **Step 5 — Tier-gated quality pass.**
 - T1: skip. - T2: run a provenance + light cross-source check.
 - T3: run the figure-extraction, depth/distance + other conflict sweeps, and build the regression set

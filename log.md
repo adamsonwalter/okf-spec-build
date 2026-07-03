@@ -2,6 +2,12 @@
 
 ## 2026-07-03
 
+* **Kit**: [CHANGELOG.md](CHANGELOG.md) — v2.3.0: Source Coverage Contracts, generalised from the `directors-guide-ai-governance` bundle omitting four recurring content boxes despite a full sequential read.
+* **Kit**: [ontology.md](ontology.md) — Added §Source Coverage Contracts, type `Coverage Ledger` (CORE, all tiers), tag `coverage` (ontology v0.2 → v0.3).
+* **Kit**: [AGENTS.MD](AGENTS.MD) — ORCHESTRATOR: SOURCE-DOCUMENT MODE vs NOTE MODE routing split. ENRICHMENT_AGENT: new `STATE: INVENTORY`, `GATE_1-INVENTORY`, `GATE_5-COVERAGE`. CONFORMANCE_AGENT: `CHECK_9`. BUNDLE INVARIANTS: #11. QUICK-START: step 1b.
+* **Kit**: [playbook/RAPID_OKF_PLAYBOOK.md](playbook/RAPID_OKF_PLAYBOOK.md) — New Step 4a (coverage ledger, all tiers, before the tier-gated quality pass).
+* **Kit**: [playbook/OKF_QUICKSTART.md](playbook/OKF_QUICKSTART.md) — Setup checklist and anti-patterns note the coverage-ledger step.
+* **Kit**: [README.md](README.md) — Conformance checklist, Agent Reference table, directories table, and version bumped to 2.3.0.
 * **Kit**: [CHANGELOG.md](CHANGELOG.md) — v2.2.2: propagate commit checklist to all generated bundles.
 * **Creation**: [playbook/BUNDLE_COMMIT_CHECKLIST.md](playbook/BUNDLE_COMMIT_CHECKLIST.md) — Printable log-before-commit gate (Paths A/B/C).
 * **Creation**: [templates/log-domain-init.md](templates/log-domain-init.md) — Domain log seed for new bundle clones.

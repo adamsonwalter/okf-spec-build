@@ -8,6 +8,47 @@ Format: [Semantic Versioning](https://semver.org) — MAJOR.MINOR.PATCH
 
 ---
 
+## [2.2.0] — 2026-07-03
+
+### Added — new protocol (generalised from a live bundle bug)
+- `ontology.md`: new **§Deliverable Parity Contracts** section (v0.1 → v0.2) — an opt-in
+  registry for hand-authored interactive deliverables (`deliverables/`, e.g. an HTML decision
+  tool) that embed their own denormalized snapshot of a concept subdirectory. Empty template
+  row + one illustrative worked example (not a live contract in the seed ontology). Format:
+  Contract ID, Deliverable file, Source scope, Identity key, Severity.
+- `AGENTS.MD` — `ENRICHMENT_AGENT`: new `GATE_3-PARITY` (on concept creation) and
+  `GATE_4-PARITY` (on concept retirement/archival) — if the mutated file falls inside a
+  registered contract's `Source scope`, the pass is not complete until the matching deliverable
+  record is added/removed in the SAME batch. Unconditional — not gated on "does this seem like
+  a significant enough change."
+- `AGENTS.MD` — `CONFORMANCE_AGENT`: new `CHECK_7` — diffs every registered contract's source
+  files against the deliverable's records by `Identity key` (not just a count) and names the
+  specific missing/extra records in the report. Skipped (not failed) when no contracts exist.
+- `AGENTS.MD` — `ORCHESTRATOR`: new routing entry — a request to register a deliverable, or a
+  description of a newly-built one, dispatches `ONTOLOGY_AGENT` to add the contract row.
+- `AGENTS.MD` — `BUNDLE INVARIANTS`: new invariant #9 (parity contracts enforced same-batch,
+  unconditionally).
+- `AGENTS.MD` — `QUICK-START FOR NEW BUNDLE`: new step 7 — register a contract the same session
+  a bespoke deliverable is built, not retroactively.
+- `playbook/RAPID_OKF_PLAYBOOK.md`: new **Step 6b** (building a bespoke interactive deliverable)
+  and a `deliverables/` row in the template-repo folder list (optional, per-domain).
+- `README.md`: `deliverables/` added to the directory table; conformance checklist and Agent
+  Reference table both note the new contract mechanism.
+
+### Root cause this fixes
+- In the `privacy-act-okf` bundle, two Scenario concepts (H, I) were created on 30 Jun and 2 Jul
+  2026 but the bundle's interactive decision-map deliverable was not updated — the old
+  instruction ("update the deliverable if the new material changes scenarios…") was conditional
+  and easy to read as not applying to a purely *additive* new scenario. That bundle now carries
+  its own live contract and passes parity; this release makes the fix structural across every
+  future bundle built from this kit, not a one-off patch to a single instruction file.
+
+### Notes
+- No new `type`s or `tag`s. No breaking change to existing agent contracts — CHECK_7 and the two
+  new gates are no-ops for any bundle with zero registered contracts (the overwhelming majority).
+
+---
+
 ## [2.1.0] — 2026-06-24
 
 ### Added (opt-in module — does not touch core)

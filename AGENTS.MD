@@ -60,6 +60,13 @@ ROUTING TABLE:
   Input is "rebuild log" or "repair log"                →  dispatch LOG_AGENT (standalone)
   Input is "build projection", "export", or "update projection"
                                                         →  dispatch PROJECTION_AGENT
+  Input describes a new hand-authored interactive deliverable that embeds a
+  snapshot of concept data, or says "register deliverable parity"           →  dispatch ONTOLOGY_AGENT
+                                                                                (add a Deliverable
+                                                                                Parity Contract row —
+                                                                                see ontology.md
+                                                                                §Deliverable Parity
+                                                                                Contracts)
 
 SEQUENCING RULE:
   ENRICHMENT_AGENT always runs in this fixed order:
@@ -139,6 +146,17 @@ GATE_3: Does every new file have a parseable YAML frontmatter block with a non-e
   YES → add file path to MUTATION_MANIFEST under "created". Proceed.
   NO  → HALT. Inject missing `type` field. Re-evaluate GATE_3.
 
+GATE_3-PARITY: Does this new file's path fall inside the `Source scope` of any registered
+  Deliverable Parity Contract in ontology.md (§Deliverable Parity Contracts)?
+  NO  → not applicable, proceed.
+  YES → this ENRICHMENT pass is NOT complete until a matching record is added to the named
+        `Deliverable file`, using the contract's `Identity key`, IN THE SAME BATCH — do not defer
+        this to a later session or to PROJECTION_AGENT (which never touches `deliverables/`).
+        Add the deliverable file path to MUTATION_MANIFEST under "deliverable_synced". If the
+        deliverable cannot be safely edited in this pass (e.g. its structure is unfamiliar),
+        HALT and report the specific contract that is now unsatisfied — do not silently proceed
+        leaving the deliverable stale.
+
 ─── STATE: MUTATE_UPDATE ────────────────────────────────────────────────────────
 ACTION:
   Load the existing .md file.
@@ -159,6 +177,10 @@ ACTION:
 GATE_4: Is the updated file parseable with a valid `type` field intact?
   YES → add file path to MUTATION_MANIFEST under "updated". Proceed.
   NO  → HALT. Restore from pre-mutation state. Report error.
+
+GATE_4-PARITY: Same check as GATE_3-PARITY, in reverse — if this update MOVES a file out of a
+  contracted `Source scope` (archived to `archive/`, retitled, deleted), the matching record in
+  the `Deliverable file` must be removed or annotated stale in the SAME batch.
 ```
 
 ---
@@ -351,6 +373,11 @@ CHECK_3  No index.md contains a frontmatter block (except okf_version at root).
 CHECK_4  log.md date headings are ISO 8601 YYYY-MM-DD, newest-first.
 CHECK_5  All internal markdown links resolve to files that exist on disk.
 CHECK_6  No .md file is named index.md or log.md and used as a concept document.
+CHECK_7  For EVERY row in ontology.md §Deliverable Parity Contracts: the files matching
+         `Source scope` and the records in `Deliverable file` (keyed on `Identity key`) are in
+         1:1 correspondence. Do not just compare counts — diff the actual keys and NAME any
+         source file with no matching record, and any deliverable record with no matching
+         source file. Skip CHECK_7 entirely (not a fail) if the contracts table has no rows.
 
 ─── STATE: REPORT ───────────────────────────────────────────────────────────────
 ACTION:
@@ -361,10 +388,15 @@ ACTION:
   PASS  CHECK_1  All concept files have parseable frontmatter.
   FAIL  CHECK_3  /subdirectory/index.md contains frontmatter block (line 1–3).
   WARN  CHECK_5  /concepts/foo.md links to /concepts/bar.md which does not exist.
+  FAIL  CHECK_7  Contract `scenario-decision-map`: scenarios/scenario-h-*.md and
+                 scenarios/scenario-i-*.md have no matching record in
+                 deliverables/app-1-7-trigger-test-decision-map.html (missing ids: H, I).
   ...
   ─────────────────────────────────────────────────────
   STATUS: NON-CONFORMANT — 1 failure, 1 warning
-  Run ENRICHMENT_AGENT or INDEX_AGENT to repair flagged files.
+  Run ENRICHMENT_AGENT or INDEX_AGENT to repair flagged files. A CHECK_7 failure is repaired by
+  hand-editing the named `Deliverable file` to add/remove the named record(s) — PROJECTION_AGENT
+  cannot fix this; it never writes to `deliverables/`.
 ```
 
 ---
@@ -483,6 +515,11 @@ These rules apply at all times and override any agent instruction:
 6. **LINK_AGENT runs after all concept files are written** in the current batch.
 7. **INDEX_AGENT runs after LINK_AGENT** so index entries reflect final file state.
 8. **LOG_AGENT runs last.** The log is a record of what happened, not a plan.
+9. **A deliverable with a registered Parity Contract is updated in the SAME batch** as the concept
+   mutation that would otherwise break parity — never deferred to "later" or assumed covered by
+   PROJECTION_AGENT (it only writes `projections/`, never `deliverables/`). This is unconditional:
+   it applies to every create/retire event inside the contract's `Source scope`, not just changes
+   that "seem significant enough" to warrant it.
 
 ---
 
@@ -524,5 +561,10 @@ When no bundle exists yet:
 5. LOG_AGENT creates log.md with a `## YYYY-MM-DD` block recording all creations.
 6. PROJECTION_AGENT compiles `projections/<bundle-slug>-master.md` — the single file to upload
    to any cloud LLM Project. Check the Sync Status field in its header to know when to regenerate.
+7. IF, later, a hand-authored interactive deliverable is built (an HTML decision tool, a
+   dashboard, anything under `deliverables/` that embeds its own snapshot of concept data) —
+   register a Deliverable Parity Contract in ontology.md THE SAME SESSION it is built (§Deliverable
+   Parity Contracts). Do this at build time, not retroactively after drift is first noticed —
+   from that point on, ENRICHMENT_AGENT and CONFORMANCE_AGENT enforce it automatically.
 
 Result: a conformant OKF v0.1 bundle in one pass, ready for both IDE and cloud LLM deployment.

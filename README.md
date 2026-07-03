@@ -31,6 +31,11 @@ Every bundle built with this kit works in two modes simultaneously:
 
 See `playbook/PROJECTION_GUIDE.md` for full details.
 
+For running a generated bundle inside a **per-client Claude Cowork Project** — attaching the
+standard OKF folder read-only and keeping client work persistent in the Project folder — see
+`playbook/COWORK_PROJECT_GUIDE.md` (thin Project-instructions loader + the two-write-target rule
+that keeps the shared standard clean across clients).
+
 ## Core vs optional
 
 This kit is split into a lean **core** (always used) and an opt-in **T3
@@ -68,7 +73,8 @@ Google spec (and why the ontology is our convention, not an OKF requirement), se
 
 | Directory | Purpose |
 |---|---|
-| `projections/` | **Flat-file exports for cloud LLM Projects.** PROJECTION_AGENT writes here. One master file = one upload. |
+| `projections/` | **Flat-file exports for cloud LLM Projects.** PROJECTION_AGENT writes here. One master file = one upload. Fully regenerated every run — cannot drift. |
+| `deliverables/` | **Optional, per-domain.** Hand-authored client artifacts (interactive HTML tools, dashboards) that PROJECTION_AGENT cannot produce. If one embeds its own snapshot of concept data, it MUST be registered as a Deliverable Parity Contract in `ontology.md` — see below. Hand-edited, so it CAN drift if the contract is skipped. |
 | `stubs/` | Placeholder concepts for known knowledge gaps. |
 | `reports/` | Loop health reports and decay reports. |
 | `archive/` | Superseded concepts (never deleted, always traceable). |
@@ -126,6 +132,8 @@ This kit produces bundles conformant with OKF v0.1 (§9):
 - ✅ Every frontmatter has a non-empty `type` field
 - ✅ `index.md` has no frontmatter (except `okf_version` at root)
 - ✅ `log.md` uses ISO 8601 date headings, newest-first
+- ✅ (if any are registered) every Deliverable Parity Contract's source concept files and
+  deliverable records are in 1:1 correspondence, by identity key — not just by count
 
 Run `CONFORMANCE_AGENT` at any time by telling Claude: *"validate the bundle"*.
 
@@ -144,6 +152,7 @@ Run `CONFORMANCE_AGENT` at any time by telling Claude: *"validate the bundle"*.
 | Repair log | "rebuild log" |
 | Check staleness | "check for stale concepts" |
 | Extend ontology | Automatic when agent encounters unregistered type |
+| **Register a deliverable parity contract** | Automatic the moment a hand-authored `deliverables/` artifact embedding concept data is built — or say **"register deliverable parity"** |
 
 ---
 
@@ -160,8 +169,8 @@ If you need to override agent behavior for a specific project, add a `PROJECT_OV
 | Component | Version |
 |---|---|
 | OKF Spec | 0.1 |
-| Bundle Bootstrap Kit | 2.0 |
-| Last updated | 2026-06-24 |
+| Bundle Bootstrap Kit | 2.2 |
+| Last updated | 2026-07-03 |
 
 ---
 

@@ -54,10 +54,14 @@ kit/
 ├── inbox/               # ADD THIS — drop raw inputs here for batch ingest
 ├── projections/         # ADD THIS — exported subsets for cloud LLMs
 ├── tasks/               # ADD THIS — pipeline (copy the generic ones; specialise per domain)
+├── deliverables/        # OPTIONAL, per-domain — hand-authored client artifacts (HTML tools,
+│                         #   dashboards). If one embeds a concept-data snapshot, register a
+│                         #   Deliverable Parity Contract in ontology.md the same session (see §6b).
 └── stubs/ reports/ archive/
 ```
 
 Add three folders to the template once: `inbox/`, `projections/`, `tasks/` (generic pipeline).
+`deliverables/` is created per-domain only when a bespoke artifact is actually built — see Step 6b.
 
 ---
 
@@ -86,6 +90,18 @@ pages. No processing yet — just collect. (variable, mostly your existing mater
 `projections/<bundle-slug>-master.md` — the single flat file that goes into a Gemini Gem,
 Claude.ai Project, or ChatGPT Project. Check the Sync Status field in its header; regenerate
 whenever the Log head advances past the Generated date.
+
+**Step 6b — Building a bespoke interactive deliverable (only if you build one).** Some domains
+earn a hand-authored client-facing artifact beyond the flat projection — an interactive HTML
+decision tool, a scored dashboard, a slide generator — living under `deliverables/`, not
+`projections/`. The moment you build one that embeds its own snapshot of concept data (a table of
+scenarios, gates, definitions, whatever), **register a Deliverable Parity Contract in ontology.md
+in the same session** (§Deliverable Parity Contracts). This is the one artifact type
+PROJECTION_AGENT cannot regenerate for you — it's hand-edited, so it drifts silently the moment a
+source concept is added or retired and nobody remembers to touch the HTML too. Registering the
+contract at build time, not after drift is first noticed, is what lets ENRICHMENT_AGENT and
+CONFORMANCE_AGENT catch it automatically from then on. (This step exists because it was skipped
+once — see CHANGELOG.md [2.2.0].)
 
 **Step 7 — Commit + tag a release.** `git add -A && git commit && git tag v1`. Done.
 

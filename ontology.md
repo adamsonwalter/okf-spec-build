@@ -5,7 +5,7 @@ description: Single source of truth for all concept types, relationship semantic
 memory_tier: semantic
 confidence: 1.0
 okf_version: "0.1"
-timestamp: 2026-06-19T00:00:00Z
+timestamp: 2026-07-03T00:00:00Z
 tags: [ontology, system, governance]
 ---
 
@@ -158,6 +158,51 @@ CONFORMANCE_AGENT checks these rules in addition to OKF v0.1 base conformance (�
 
 ---
 
+# Deliverable Parity Contracts
+
+> Most derived output never needs this section: `projections/` files are **regenerated in full**
+> every time PROJECTION_AGENT runs, so they cannot silently drift. This section exists for a
+> narrower, riskier case — a **hand-authored, self-contained interactive artifact** (an HTML/JS
+> decision tool, a dashboard, a slide-deck generator, an embedded lookup table, etc.) that carries
+> its **own denormalized snapshot** of one or more concept subdirectories, because it needs custom
+> rendering PROJECTION_AGENT's flat-markdown output cannot produce. That snapshot is hand-edited,
+> not regenerated — so the moment a concept is added, retired, or renamed and the deliverable is
+> not touched in the same pass, it silently goes stale. Register a contract here **the first time**
+> such a deliverable is built, and CONFORMANCE_AGENT will catch drift automatically from then on
+> instead of relying on someone noticing.
+
+**Format** — one row per deliverable that embeds a source-concept snapshot:
+
+| Field | Meaning |
+|---|---|
+| `Contract ID` | Short slug identifying the contract. |
+| `Deliverable file` | Path to the artifact, relative to bundle root (typically under `deliverables/`). |
+| `Source scope` | The concept subdirectory, or a `type`/`tag` filter, being mirrored. |
+| `Identity key` | How ONE record in the deliverable maps 1:1 to ONE source file (a lettered/numbered `id`, a filename slug, a title match…). CONFORMANCE_AGENT diffs on this key, not just a count, so it can name exactly which record is missing or extra — not just report "counts don't match". |
+| `Severity` | `ERROR` (the deliverable ships broken or misleading to an end user/client) or `WARNING` (cosmetic drift only). Default to `ERROR` for anything client-facing. |
+
+| Contract ID | Deliverable file | Source scope | Identity key | Severity |
+|---|---|---|---|---|
+| *(none at bundle initialisation — register the first time a hand-authored deliverable snapshots concept data; see worked example below)* | — | — | — | — |
+
+**Worked example** (illustrative only — this is not a live contract in this seed ontology; shown
+so a domain builder can copy the pattern exactly):
+
+| Contract ID | Deliverable file | Source scope | Identity key | Severity |
+|---|---|---|---|---|
+| `scenario-decision-map` | `deliverables/app-1-7-trigger-test-decision-map.html` | `scenarios/scenario-*.md` (one row per file) | Scenario letter — the concept's `title: "Scenario X — …"` matched against the deliverable's embedded `id` field | ERROR |
+
+This is the exact fix applied retroactively to the `privacy-act-okf` bundle after its
+`scenarios/` directory grew to nine concepts (A–I) while its interactive decision-map deliverable
+had silently stalled at seven (A–G) for several days — an *additive* new Scenario concept did not
+read, on a first pass, like it triggered "update the deliverable", because the old instruction was
+conditional ("if the new material changes scenarios…") rather than unconditional on any create/
+retire event. See CHANGELOG.md [2.2.0] and AGENTS.MD §ENRICHMENT_AGENT / §CONFORMANCE_AGENT for
+how this is now enforced unconditionally, at write time and at audit time, for every bundle built
+from this kit — not just the one where the gap was first found.
+
+---
+
 # ONTOLOGY_AGENT — Extension Protocol
 
 When ENRICHMENT_AGENT encounters an unregistered `type` or `tag`, it does NOT silently
@@ -204,3 +249,4 @@ types in existing concept files should flag for migration, not auto-migrate.
 | Version | Date | Change |
 |---|---|---|
 | 0.1 | 2026-06-19 | Initial ontology for bundle bootstrap kit |
+| 0.2 | 2026-07-03 | Added **§Deliverable Parity Contracts** — an opt-in registry for hand-authored interactive deliverables that embed a denormalized snapshot of a concept subdirectory. Generalises a bundle-specific fix (`privacy-act-okf` scenario/decision-map drift) into a reusable kit pattern. Empty template + one illustrative worked example; no live contract in this seed ontology. Paired with AGENTS.MD changes enforcing it at write time (ENRICHMENT_AGENT) and audit time (CONFORMANCE_AGENT CHECK_7). No new types/tags. |

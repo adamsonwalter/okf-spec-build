@@ -67,7 +67,7 @@ Google spec (and why the ontology is our convention, not an OKF requirement), se
 |---|---|
 | `ontology.md` | Single source of truth. Type registry, relationship taxonomy, tag vocabulary. Embedded as §0 in every projection. |
 | `index.md` | Bundle root index. Auto-maintained by INDEX_AGENT. **Not for cloud Project upload.** |
-| `log.md` | Mutation history. Auto-maintained by LOG_AGENT. **Not for cloud Project upload.** |
+| `log.md` | Mutation history. Auto-maintained by LOG_AGENT. **Not for cloud Project upload.** Append before every commit — see kit-maintenance checklist in AGENTS.MD. |
 
 ### Directories
 
@@ -149,7 +149,8 @@ Run `CONFORMANCE_AGENT` at any time by telling Claude: *"validate the bundle"*.
 | **Build tag-scoped slice** | **"build projection [tag]"** |
 | Bundle audit | "validate" or "audit the bundle" |
 | Rebuild index | "rebuild index" |
-| Repair log | "rebuild log" |
+| Repair log | "rebuild log" or "repair log" |
+| **Commit / push kit changes** | **LOG_AGENT first** (append to `log.md`), then `git commit` — see AGENTS.MD §KIT-MAINTENANCE COMMIT CHECKLIST |
 | Check staleness | "check for stale concepts" |
 | Extend ontology | Automatic when agent encounters unregistered type |
 | **Register a deliverable parity contract** | Automatic the moment a hand-authored `deliverables/` artifact embedding concept data is built — or say **"register deliverable parity"** |
@@ -169,7 +170,7 @@ If you need to override agent behavior for a specific project, add a `PROJECT_OV
 | Component | Version |
 |---|---|
 | OKF Spec | 0.1 |
-| Bundle Bootstrap Kit | 2.2 |
+| Bundle Bootstrap Kit | 2.2.1 |
 | Last updated | 2026-07-03 |
 
 ---

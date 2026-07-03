@@ -58,6 +58,13 @@ ROUTING TABLE:
   Input is "validate" or "audit"                        →  dispatch CONFORMANCE_AGENT
   Input is "rebuild index" or "reindex"                 →  dispatch INDEX_AGENT (standalone)
   Input is "rebuild log" or "repair log"                →  dispatch LOG_AGENT (standalone)
+  Input is "commit", "push", "save", or any request to finalize changes after a
+  direct edit to bundle infrastructure (AGENTS.MD, README.md, CHANGELOG.md,
+  ontology.md, playbook/, docs/, optional/, projections/, ontology-mapper/,
+  .gitignore, or any non-ingest file write)             →  dispatch LOG_AGENT first
+                                                          (standalone — build manifest
+                                                          from the files changed in
+                                                          this session), THEN git
   Input is "build projection", "export", or "update projection"
                                                         →  dispatch PROJECTION_AGENT
   Input describes a new hand-authored interactive deliverable that embeds a
@@ -77,6 +84,16 @@ SEQUENCING RULE:
 
   Agents 2–4 receive the MUTATION_MANIFEST output from step 1.
   Do not run INDEX_AGENT or LOG_AGENT before ENRICHMENT_AGENT completes.
+
+  KIT_MAINTENANCE path (direct edits — no ENRICHMENT, no new concepts):
+    1. Apply the infrastructure edits
+    2. INDEX_AGENT (only if concept files or directory listings changed)
+    3. LOG_AGENT (mandatory — append before git commit)
+    4. git commit / push (human or agent — only after step 3)
+
+  LOG_AGENT is NOT optional on the kit-maintenance path. Commits that change bundle
+  files but leave log.md untouched since the last ## date block are a protocol violation.
+  Never replace log.md body with a placeholder comment — historical entries are append-only.
 ```
 
 ---
@@ -291,7 +308,9 @@ GATE_6: Does every produced index.md have NO frontmatter block (except okf_versi
 ```
 AGENT: LOG_AGENT
 ROLE: Append a dated mutation record to log.md at the bundle root.
-INPUT: MUTATION_MANIFEST from ENRICHMENT_AGENT + pruned_links from LINK_AGENT
+INPUT: MUTATION_MANIFEST from ENRICHMENT_AGENT + pruned_links from LINK_AGENT;
+       OR a KIT_MANIFEST (explicit list of infrastructure paths changed this session,
+       built from git diff or the agent's own edit list) on the kit-maintenance path
 
 ─── STATE: WRITE_LOG ────────────────────────────────────────────────────────────
 ACTION:
@@ -305,9 +324,15 @@ ACTION:
 
   * **Creation**: [<title>](<bundle-relative-path>.md) — <one-line reason>
   * **Update**: [<title>](<bundle-relative-path>.md) — <what changed>
+  * **Kit**: [<path>](<bundle-relative-path>) — <what changed> (infrastructure: AGENTS.MD,
+    README, CHANGELOG, playbook/, docs/, optional/, projections/, .gitignore, etc.)
+  * **Restructure**: [<path>](<new-path>) — <move/rename reason> (use when a file changes
+    directory, e.g. root → optional/)
   * **Link**: [<concept A>] ↔ [<concept B>] — relationship injected
   * **Pruned**: [<concept A>] → [<dead-target>] — target did not exist
   * **Deprecation**: [<title>](<path>.md) — <reason> (use when a concept is retired)
+  * **Gap**: [<stub or path>](<path>) — <known missing piece recorded>
+  * **Initialization**: <one-line bundle bootstrap event> (first install only)
 
   ═══════════════════════════════════════════════════════════════════════════════
 
@@ -316,9 +341,13 @@ ACTION:
   - Use today's date (UTC).
   - If a date block for today already exists, append new entries under it.
   - Do NOT create a new date block for the same date.
-  - Bold action word is required: **Creation**, **Update**, **Link**, **Pruned**, **Deprecation**.
-  - Each entry links to the affected concept using a bundle-relative path.
+  - Bold action word is required (see list above).
+  - Each entry links to the affected file using a bundle-relative path where applicable.
   - Omit categories with zero entries (do not write "* **Pruned**: none").
+  - NEVER delete or replace prior date blocks. NEVER substitute the file body with a
+    placeholder such as "populated by LOG_AGENT". Append only.
+  - On kit-maintenance commits: one **Kit** or **Restructure** line per infrastructure
+    file or directory touched, summarising the change in one sentence.
 
 GATE_7: Is log.md valid — date heading in ISO 8601, entries newest-first, no frontmatter?
   YES → HALT with SUCCESS. Report summary to orchestrator.
@@ -378,6 +407,10 @@ CHECK_7  For EVERY row in ontology.md §Deliverable Parity Contracts: the files 
          1:1 correspondence. Do not just compare counts — diff the actual keys and NAME any
          source file with no matching record, and any deliverable record with no matching
          source file. Skip CHECK_7 entirely (not a fail) if the contracts table has no rows.
+CHECK_8  log.md body is NOT placeholder-only (no sole line like "populated by LOG_AGENT"
+         with zero ## YYYY-MM-DD date blocks). FAIL if placeholder-only and any concept file,
+         kit infrastructure file, or CHANGELOG.md version entry post-dates initialization —
+         the log was not maintained. Repair: run LOG_AGENT standalone ("repair log").
 
 ─── STATE: REPORT ───────────────────────────────────────────────────────────────
 ACTION:
@@ -391,12 +424,14 @@ ACTION:
   FAIL  CHECK_7  Contract `scenario-decision-map`: scenarios/scenario-h-*.md and
                  scenarios/scenario-i-*.md have no matching record in
                  deliverables/app-1-7-trigger-test-decision-map.html (missing ids: H, I).
+  FAIL  CHECK_8  log.md is placeholder-only — no ## date blocks despite kit mutations.
   ...
   ─────────────────────────────────────────────────────
   STATUS: NON-CONFORMANT — 1 failure, 1 warning
   Run ENRICHMENT_AGENT or INDEX_AGENT to repair flagged files. A CHECK_7 failure is repaired by
   hand-editing the named `Deliverable file` to add/remove the named record(s) — PROJECTION_AGENT
-  cannot fix this; it never writes to `deliverables/`.
+  cannot fix this; it never writes to `deliverables/`. A CHECK_8 failure is repaired by
+  LOG_AGENT ("repair log") backfilling from git history or CHANGELOG.md, then appending going forward.
 ```
 
 ---
@@ -514,12 +549,33 @@ These rules apply at all times and override any agent instruction:
 5. **Conflict annotation, never silent overwrite.** Use `<!-- CONFLICT -->` comments.
 6. **LINK_AGENT runs after all concept files are written** in the current batch.
 7. **INDEX_AGENT runs after LINK_AGENT** so index entries reflect final file state.
-8. **LOG_AGENT runs last.** The log is a record of what happened, not a plan.
-9. **A deliverable with a registered Parity Contract is updated in the SAME batch** as the concept
+8. **LOG_AGENT runs last** in the enrichment cycle. The log is a record of what happened, not a plan.
+9. **LOG_AGENT runs before every commit** — including kit-maintenance edits that bypass
+   ENRICHMENT_AGENT. Never commit bundle file changes without appending to log.md first.
+   Never wipe log.md to a placeholder.
+10. **A deliverable with a registered Parity Contract is updated in the SAME batch** as the concept
    mutation that would otherwise break parity — never deferred to "later" or assumed covered by
    PROJECTION_AGENT (it only writes `projections/`, never `deliverables/`). This is unconditional:
    it applies to every create/retire event inside the contract's `Source scope`, not just changes
    that "seem significant enough" to warrant it.
+
+---
+
+## KIT-MAINTENANCE COMMIT CHECKLIST
+
+Any agent or human editing kit infrastructure (this repo or a bundle's AGENTS.MD,
+README, playbooks, docs, optional layer, projections scaffold) MUST follow this
+sequence before `git commit` or `git push`:
+
+1. List every file changed in this session (or run `git diff --name-only`).
+2. Dispatch **LOG_AGENT** — append one **Kit** / **Restructure** / **Creation** line
+   per path under today's `## YYYY-MM-DD` block in `log.md`.
+3. If concept files or directories changed, run **INDEX_AGENT** on affected dirs.
+4. `git add -A && git commit` — log.md MUST be in the commit.
+5. `git push` (if requested).
+
+Skipping step 2 is what caused log.md to go empty after v2.0.0 while CHANGELOG.md
+continued to be updated. CHANGELOG tracks kit *releases*; log.md tracks every *mutation*.
 
 ---
 

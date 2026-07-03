@@ -8,6 +8,24 @@ Format: [Semantic Versioning](https://semver.org) — MAJOR.MINOR.PATCH
 
 ---
 
+## [2.2.1] — 2026-07-03
+
+### Fixed
+- `log.md`: Restored full mutation history (backfilled v1.1.1–v2.2.0) after v2.0.0 accidentally
+  replaced all entries with a placeholder comment.
+- `AGENTS.MD`: **Kit-maintenance path** — LOG_AGENT is now mandatory before `git commit` /
+  `git push` on direct infrastructure edits (not only after ENRICHMENT_AGENT). New orchestrator
+  routing for "commit"/"push"/"save"; new **Kit** and **Restructure** log verbs; CHECK_8
+  placeholder-only guard; invariant #9; KIT-MAINTENANCE COMMIT CHECKLIST section.
+- `README.md`: Agent table notes LOG_AGENT before commit on kit edits.
+
+### Root cause
+- LOG_AGENT only ran after ENRICHMENT_AGENT. Kit releases (AGENTS.MD, README, playbooks) bypass
+  that pipeline, so commits updated CHANGELOG.md but never appended log.md. v2.0.0 made this
+  worse by wiping the log to a placeholder.
+
+---
+
 ## [2.2.0] — 2026-07-03
 
 ### Added — new protocol (generalised from a live bundle bug)

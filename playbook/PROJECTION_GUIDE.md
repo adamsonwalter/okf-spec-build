@@ -153,6 +153,8 @@ The projection is a **derived artifact** — it is generated from the source of 
 
 Recommendations:
 - **After every ingest session:** run `"update projection"` before committing. The projection in the repo is then always at most one session behind.
+- **Before every commit:** confirm `log.md` reflects this session (ingest appends via LOG_AGENT;
+  direct edits need `"append log"` / `"repair log"` first). See `playbook/BUNDLE_COMMIT_CHECKLIST.md`.
 - **Tag the projection in git alongside the bundle version:** `git tag v2 && git push --tags`. This makes it trivial to know what the cloud Project was loaded from.
 - **Never mix projections and concept files in the same cloud Project upload.** The projection is self-contained.
 

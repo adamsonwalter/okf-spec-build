@@ -67,7 +67,7 @@ Google spec (and why the ontology is our convention, not an OKF requirement), se
 |---|---|
 | `ontology.md` | Single source of truth. Type registry, relationship taxonomy, tag vocabulary. Embedded as §0 in every projection. |
 | `index.md` | Bundle root index. Auto-maintained by INDEX_AGENT. **Not for cloud Project upload.** |
-| `log.md` | Mutation history. Auto-maintained by LOG_AGENT. **Not for cloud Project upload.** Append before every commit — see kit-maintenance checklist in AGENTS.MD. |
+| `log.md` | Mutation history. Auto-maintained by LOG_AGENT. **Not for cloud Project upload.** Append before every commit — see `playbook/BUNDLE_COMMIT_CHECKLIST.md`. |
 
 ### Directories
 
@@ -78,6 +78,8 @@ Google spec (and why the ontology is our convention, not an OKF requirement), se
 | `stubs/` | Placeholder concepts for known knowledge gaps. |
 | `reports/` | Loop health reports and decay reports. |
 | `archive/` | Superseded concepts (never deleted, always traceable). |
+| `playbook/` | Domain setup and operations guides — **includes `BUNDLE_COMMIT_CHECKLIST.md`**. |
+| `templates/` | Seeds for new bundles — **`log-domain-init.md`** for domain `log.md` on first clone. |
 
 ---
 
@@ -98,6 +100,10 @@ lowercase.md  = OKF concept documents (frontmatter required, type required, inde
 git clone https://github.com/adamsonwalter/okf-spec-build .
 # or copy files into an existing project root
 ```
+
+For a **new domain bundle** (not contributing to the kit itself): copy
+`templates/log-domain-init.md` → `log.md` and set your domain name + date. Do not keep the
+kit's release history in a domain repo's log.
 
 ### 2. Start a session in Claude Cowork
 
@@ -122,6 +128,19 @@ Every subsequent session, new inputs are synthesized against existing concepts:
 
 The bundle compounds over time.
 
+### 3. Commit discipline (every bundle)
+
+**Never `git commit` without updating `log.md` first.**
+
+| Session type | What to do before commit |
+|---|---|
+| Ingest (`"ingest inbox/"`) | Pipeline runs LOG_AGENT automatically — verify `log.md` has today's entries |
+| Direct edits (ontology, concepts, deliverables, etc.) | Run `"append log"` or `"repair log"`, then commit |
+| Any commit / push request | Orchestrator routes to LOG_AGENT first (AGENTS.MD §BUNDLE COMMIT CHECKLIST) |
+
+Printable checklist: `playbook/BUNDLE_COMMIT_CHECKLIST.md`. Domain log seed:
+`templates/log-domain-init.md`.
+
 ---
 
 ## OKF Conformance
@@ -131,7 +150,7 @@ This kit produces bundles conformant with OKF v0.1 (§9):
 - ✅ Every concept `.md` has parseable YAML frontmatter
 - ✅ Every frontmatter has a non-empty `type` field
 - ✅ `index.md` has no frontmatter (except `okf_version` at root)
-- ✅ `log.md` uses ISO 8601 date headings, newest-first
+- ✅ `log.md` uses ISO 8601 date headings, newest-first; not placeholder-only (CHECK_8)
 - ✅ (if any are registered) every Deliverable Parity Contract's source concept files and
   deliverable records are in 1:1 correspondence, by identity key — not just by count
 
@@ -150,7 +169,7 @@ Run `CONFORMANCE_AGENT` at any time by telling Claude: *"validate the bundle"*.
 | Bundle audit | "validate" or "audit the bundle" |
 | Rebuild index | "rebuild index" |
 | Repair log | "rebuild log" or "repair log" |
-| **Commit / push kit changes** | **LOG_AGENT first** (append to `log.md`), then `git commit` — see AGENTS.MD §KIT-MAINTENANCE COMMIT CHECKLIST |
+| **Commit / push bundle changes** | **LOG_AGENT first** — see `playbook/BUNDLE_COMMIT_CHECKLIST.md` and AGENTS.MD §BUNDLE COMMIT CHECKLIST |
 | Check staleness | "check for stale concepts" |
 | Extend ontology | Automatic when agent encounters unregistered type |
 | **Register a deliverable parity contract** | Automatic the moment a hand-authored `deliverables/` artifact embedding concept data is built — or say **"register deliverable parity"** |
@@ -170,7 +189,7 @@ If you need to override agent behavior for a specific project, add a `PROJECT_OV
 | Component | Version |
 |---|---|
 | OKF Spec | 0.1 |
-| Bundle Bootstrap Kit | 2.2.1 |
+| Bundle Bootstrap Kit | 2.2.2 |
 | Last updated | 2026-07-03 |
 
 ---

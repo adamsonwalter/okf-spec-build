@@ -114,8 +114,10 @@ folder. When unsure, treat it as client-specific and save it here.
 ## Maintaining the standard
 
 Update the OKF once, in **Mode A** (a dedicated maintenance session where the OKF folder is the
-working folder): drop new material into `inbox/`, run the ingestion workflow, commit + tag in
-git. Every client Project then picks up the new version. Never mutate the standard mid-client-chat.
+working folder): drop new material into `inbox/`, run the ingestion workflow (ENRICHMENT → LINK →
+INDEX → **LOG**), confirm `log.md` updated, then commit + tag in git. Every client Project then
+picks up the new version. Never mutate the standard mid-client-chat. Never `git commit` without
+`log.md` in the commit — see `playbook/BUNDLE_COMMIT_CHECKLIST.md`.
 
 ---
 

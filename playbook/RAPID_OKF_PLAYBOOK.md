@@ -53,6 +53,8 @@ kit/
 ├── index.md  log.md
 ├── inbox/               # ADD THIS — drop raw inputs here for batch ingest
 ├── projections/         # ADD THIS — exported subsets for cloud LLMs
+├── templates/           # Seeds — copy log-domain-init.md → log.md on first clone
+├── playbook/            # Includes BUNDLE_COMMIT_CHECKLIST.md (log before every commit)
 ├── tasks/               # ADD THIS — pipeline (copy the generic ones; specialise per domain)
 ├── deliverables/        # OPTIONAL, per-domain — hand-authored client artifacts (HTML tools,
 │                         #   dashboards). If one embeds a concept-data snapshot, register a
@@ -68,6 +70,9 @@ Add three folders to the template once: `inbox/`, `projections/`, `tasks/` (gene
 ## 3. Per-domain setup — the 6-step rapid path (target: a few hours)
 
 **Step 1 — Clone.** `git clone kit <domain>` → new repo. (2 min)
+
+**Step 1b — Domain log.** Copy `templates/log-domain-init.md` → `log.md`; set today's date and
+the domain name. A domain bundle tracks its own mutations — not the kit's release history. (1 min)
 
 **Step 2 — Domain intake (the only "thinking" part).** Answer a 10-question intake (see
 `OKF_QUICKSTART.md`) to produce: (a) 6–15 domain **types**, (b) domain **tags**, (c) a **topic
@@ -103,7 +108,9 @@ contract at build time, not after drift is first noticed, is what lets ENRICHMEN
 CONFORMANCE_AGENT catch it automatically from then on. (This step exists because it was skipped
 once — see CHANGELOG.md [2.2.0].)
 
-**Step 7 — Commit + tag a release.** `git add -A && git commit && git tag v1`. Done.
+**Step 7 — Commit + tag a release.** Confirm `log.md` reflects this session (ingest pipeline
+appends automatically; for direct edits run `"append log"` first). Then:
+`git add -A && git commit && git tag v1`. See `playbook/BUNDLE_COMMIT_CHECKLIST.md`. Done.
 
 After the first domain, steps 1–2 take under an hour; steps 4–6 are automated.
 
@@ -154,7 +161,8 @@ You generate insight continuously. Capture it cheaply:
    on confirmation, flags contradictions with `<!-- CONFLICT -->` (never silent overwrite),
    supersedes+archives changed concepts, updates `index.md`/`log.md`.
 3. **Re-project** any subsets that changed; re-upload to the cloud tools that use them.
-4. **Commit.** `git commit` — the log + git history are your audit trail.
+4. **Commit.** Verify `log.md` has today's batch; if not, `"repair log"` first. `git commit` —
+   the log + git history are your audit trail (`playbook/BUNDLE_COMMIT_CHECKLIST.md`).
 
 For source REISSUES (a vendor updates a manual), use the **refresh playbook** pattern from the Optus
 build: detect version from the document, re-extract changed parts only, re-run sweeps, diff values,

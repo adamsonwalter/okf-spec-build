@@ -18,6 +18,7 @@ Output of intake → register types/tags in `ontology.md`; save topic inventory 
 
 ## B. Setup checklist
 - [ ] `git clone kit <domain>`; confirm AGENTS.MD present
+- [ ] **Reset `log.md`:** copy `templates/log-domain-init.md` → `log.md`; set date + domain name (do not keep kit release history)
 - [ ] Add `inbox/ projections/` if missing
 - [ ] Register domain types + tags in `ontology.md` (from intake Q4/Q5)
 - [ ] Save topic inventory to `TODO.md` (from Q6)
@@ -26,16 +27,18 @@ Output of intake → register types/tags in `ontology.md`; save topic inventory 
 - [ ] Tier pass: T1 none · T2 provenance+light check · T3 figures+conflict sweeps+regression
 - [ ] **Run: "build projection"** → verify `projections/<bundle>-master.md` created
 - [ ] Upload `projections/<bundle>-master.md` to your cloud LLM Project (Gemini Gem / Claude.ai / ChatGPT)
-- [ ] `git add -A && git commit -m "v1 <domain>" && git tag v1`
+- [ ] Confirm `log.md` has today's ingest entries (LOG_AGENT ran in pipeline)
+- [ ] `git add -A && git commit -m "v1 <domain>" && git tag v1` — **log.md must be in the commit** (see `playbook/BUNDLE_COMMIT_CHECKLIST.md`)
 
 ## C. Per-update checklist (batch)
 - [ ] Drop new material in `inbox/`
-- [ ] Run "ingest inbox/"
+- [ ] Run "ingest inbox/" (ENRICHMENT → LINK → INDEX → **LOG**)
 - [ ] Review any `<!-- CONFLICT -->` flags
 - [ ] (T3) extend regression set per new conflict/critical value
 - [ ] **Run "update projection"** → check Sync Status header in `projections/<bundle>-master.md`
 - [ ] In your cloud Project: delete old projection upload, upload new file (one swap)
-- [ ] `git commit`
+- [ ] Confirm `log.md` updated for this batch; if not, run **"repair log"** before commit
+- [ ] `git add -A && git commit` — log.md in commit; see `playbook/BUNDLE_COMMIT_CHECKLIST.md`
 
 ## D. Projection one-liner (filter by tag → single file)
 "Concatenate every concept whose tags include <TAG> into projections/<TAG>.md, each with its
@@ -50,5 +53,7 @@ title + source reference, newest first." Then upload that one file to the LLM's 
 - **Manually editing projection files** → they are derived; fix the source concept and regenerate.
 - Pushing the live repo into every LLM → push small projections instead.
 - One giant bundle for everything → one bundle PER domain; subset across with tags.
+- **`git commit` without updating `log.md`** → LOG_AGENT must run before every commit (ingest
+  pipeline or `"repair log"` / `"append log"`). See `playbook/BUNDLE_COMMIT_CHECKLIST.md`.
 
 © 2026 Walter Adamson | BHP 20 years, Head IT Audit - IT Strategy - Corporate Planning - International Bus Development | 100+ AI workflow solutions delivered | linkedin.com/in/adamson | walter@outcomesnow.com

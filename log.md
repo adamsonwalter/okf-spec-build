@@ -2,6 +2,11 @@
 
 ## 2026-07-03
 
+* **Kit**: [CHANGELOG.md](CHANGELOG.md) — v2.2.2: propagate commit checklist to all generated bundles.
+* **Creation**: [playbook/BUNDLE_COMMIT_CHECKLIST.md](playbook/BUNDLE_COMMIT_CHECKLIST.md) — Printable log-before-commit gate (Paths A/B/C).
+* **Creation**: [templates/log-domain-init.md](templates/log-domain-init.md) — Domain log seed for new bundle clones.
+* **Kit**: [AGENTS.MD](AGENTS.MD) — §BUNDLE COMMIT CHECKLIST applies to all bundles; QUICK-START steps 0 and 8.
+* **Kit**: [README.md](README.md), [playbook/OKF_QUICKSTART.md](playbook/OKF_QUICKSTART.md), [playbook/RAPID_OKF_PLAYBOOK.md](playbook/RAPID_OKF_PLAYBOOK.md), [playbook/COWORK_PROJECT_GUIDE.md](playbook/COWORK_PROJECT_GUIDE.md), [playbook/PROJECTION_GUIDE.md](playbook/PROJECTION_GUIDE.md) — Commit discipline wired into setup/update flows.
 * **Kit**: [CHANGELOG.md](CHANGELOG.md) — v2.2.1: LOG_AGENT commit gate, log backfill, CHECK_8.
 * **Kit**: [README.md](README.md) — Kit-maintenance commit trigger in Agent Reference table.
 * **Kit**: [log.md](log.md) — Restored full mutation history after v2.0.0 placeholder wipe; backfilled v1.1.1–v2.2.0.

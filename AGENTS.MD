@@ -58,7 +58,7 @@ ROUTING TABLE:
   Input is "validate" or "audit"                        →  dispatch CONFORMANCE_AGENT
   Input is "rebuild index" or "reindex"                 →  dispatch INDEX_AGENT (standalone)
   Input is "rebuild log" or "repair log"                →  dispatch LOG_AGENT (standalone)
-  Input is "commit", "push", "save", or any request to finalize changes after a
+  Input is "commit", "push", "save", "append log", or any request to finalize changes after a
   direct edit to bundle infrastructure (AGENTS.MD, README.md, CHANGELOG.md,
   ontology.md, playbook/, docs/, optional/, projections/, ontology-mapper/,
   .gitignore, or any non-ingest file write)             →  dispatch LOG_AGENT first
@@ -561,21 +561,45 @@ These rules apply at all times and override any agent instruction:
 
 ---
 
-## KIT-MAINTENANCE COMMIT CHECKLIST
+## BUNDLE COMMIT CHECKLIST
 
-Any agent or human editing kit infrastructure (this repo or a bundle's AGENTS.MD,
-README, playbooks, docs, optional layer, projections scaffold) MUST follow this
-sequence before `git commit` or `git push`:
+> **Renamed scope:** This checklist applies to **every OKF bundle** — domain repos generated
+> from this kit, not only the okf-spec-build repo. Printable copy:
+> `playbook/BUNDLE_COMMIT_CHECKLIST.md`.
 
-1. List every file changed in this session (or run `git diff --name-only`).
-2. Dispatch **LOG_AGENT** — append one **Kit** / **Restructure** / **Creation** line
-   per path under today's `## YYYY-MM-DD` block in `log.md`.
+Any agent or human mutating bundle files MUST follow one of these paths before `git commit` or
+`git push`:
+
+### Path A — Ingest session (ENRICHMENT pipeline)
+
+```
+ingest → ENRICHMENT → LINK → INDEX → LOG → commit
+```
+
+LOG_AGENT is step 4 of every ingest. Do not commit until `log.md` shows today's batch.
+If ingest completed but log did not update, run LOG_AGENT standalone (`repair log`) before commit.
+
+### Path B — Direct edits (bypass ENRICHMENT)
+
+Ontology edits, hand-edited concepts, playbooks, deliverables, parity contracts, infrastructure:
+
+1. List every file changed this session (or run `git diff --name-only`).
+2. Dispatch **LOG_AGENT** — append **Kit** / **Update** / **Restructure** / **Creation** lines
+   under today's `## YYYY-MM-DD` block in `log.md`.
 3. If concept files or directories changed, run **INDEX_AGENT** on affected dirs.
 4. `git add -A && git commit` — log.md MUST be in the commit.
 5. `git push` (if requested).
 
-Skipping step 2 is what caused log.md to go empty after v2.0.0 while CHANGELOG.md
-continued to be updated. CHANGELOG tracks kit *releases*; log.md tracks every *mutation*.
+Orchestrator routes **"commit"**, **"push"**, **"save"** → LOG_AGENT first (Path B).
+
+### Path C — New domain repo cloned from this kit
+
+Replace `log.md` with `templates/log-domain-init.md` (domain name + date filled in).
+Do not inherit the kit repo's release history in a domain bundle's log.
+
+Skipping LOG_AGENT before commit is what caused log.md to go empty after kit v2.0.0 while
+CHANGELOG.md continued to be updated. CHANGELOG tracks kit *releases*; log.md tracks every
+*mutation* in this bundle.
 
 ---
 
@@ -608,8 +632,10 @@ continued to be updated. CHANGELOG tracks kit *releases*; log.md tracks every *m
 
 ## QUICK-START FOR NEW BUNDLE
 
-When no bundle exists yet:
+When cloning this kit into a new domain repo (or starting from scratch):
 
+0. Replace `log.md` with `templates/log-domain-init.md` — fill in today's date and the
+   domain name. Do not keep the kit's own release history in a domain bundle.
 1. OKF_ORCHESTRATOR receives input.
 2. ENRICHMENT_AGENT extracts concepts → writes concept .md files.
 3. LINK_AGENT scans all newly written files → injects links.
@@ -621,6 +647,8 @@ When no bundle exists yet:
    dashboard, anything under `deliverables/` that embeds its own snapshot of concept data) —
    register a Deliverable Parity Contract in ontology.md THE SAME SESSION it is built (§Deliverable
    Parity Contracts). Do this at build time, not retroactively after drift is first noticed —
-   from that point on, ENRICHMENT_AGENT and CONFORMANCE_AGENT enforce it automatically.
+   from this point on, ENRICHMENT_AGENT and CONFORMANCE_AGENT enforce it automatically.
+8. Before every `git commit` or `git push`, follow §BUNDLE COMMIT CHECKLIST (Paths A–C).
+   Say `"commit"` or `"push"` only after LOG_AGENT has appended to `log.md` for this session.
 
 Result: a conformant OKF v0.1 bundle in one pass, ready for both IDE and cloud LLM deployment.

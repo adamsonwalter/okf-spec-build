@@ -8,6 +8,22 @@ Format: [Semantic Versioning](https://semver.org) — MAJOR.MINOR.PATCH
 
 ---
 
+## [2.2.2] — 2026-07-03
+
+### Added
+- `playbook/BUNDLE_COMMIT_CHECKLIST.md` — printable commit gate for every generated bundle
+  (Paths A ingest / B direct-edit / C first-clone).
+- `templates/log-domain-init.md` — domain `log.md` seed; new domain repos must not inherit kit
+  release history.
+
+### Changed
+- `AGENTS.MD`: §BUNDLE COMMIT CHECKLIST (renamed from kit-only scope); QUICK-START step 0
+  (domain log seed) and step 8 (commit gate); `"append log"` orchestrator trigger.
+- `playbook/OKF_QUICKSTART.md`, `RAPID_OKF_PLAYBOOK.md`, `COWORK_PROJECT_GUIDE.md`,
+  `PROJECTION_GUIDE.md`, `README.md` — all commit steps now require `log.md` verification.
+
+---
+
 ## [2.2.1] — 2026-07-03
 
 ### Fixed

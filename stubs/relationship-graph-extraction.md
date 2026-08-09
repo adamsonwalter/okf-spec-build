@@ -56,7 +56,7 @@ The 9 that do not parse are informative: four use unregistered inverse or past-t
 three are genuine prose cross-references carrying no relationship at all. The inverse forms
 are the finding — authors need to state an edge backwards and the taxonomy gives them no way.
 
-Full staged plan: [docs/PLAN-graph-and-certainty.md](../docs/PLAN-graph-and-certainty.md).
+Full staged plan: [docs/PLAN_GRAPH_AND_CERTAINTY.md](../docs/PLAN_GRAPH_AND_CERTAINTY.md).
 
 ## What filling it involves
 

@@ -51,11 +51,24 @@ a mutual-exclusion group. A bundle that uses certainty tags fills those columns;
 that does not leaves them empty and nothing changes. One rule then enforces two things
 across every bundle:
 
-- a concept carries at most one tag from a mutual-exclusion group
-- a concept's `confidence` falls inside the declared band of the certainty tag it carries
+- a concept's `confidence` falls inside the declared band of every certainty tag it carries
 
-Both are set and range tests, so both belong in `scripts/okf_check.py` rather than in an
-instruction file.
+A range test, so it belongs in `scripts/okf_check.py` rather than in an instruction file.
+
+**Corrected 9 August 2026 — certainty attaches to a claim, not to a document.** An earlier
+version of this stub also proposed "at most one tag from a mutual-exclusion group". Measuring
+the corpus killed that: three concepts carry `confirmed` *and* `interpretation`, and the
+30 July log entry for `app-1-3-policy-currency` records why on purpose — *"Principle
+`confirmed`; enforcement dimension `interpretation`."* One concept, two claims, two
+certainties. A mutual-exclusion rule would break working practice. An `Exclusive group`
+column may still be worth declaring for a bundle that has a real exclusion, but it must not
+be applied to this one.
+
+**And the bands themselves are in question, not just the enforcement.** Measured against
+`privacy-act-okf`: `confirmed` spans 0.8–1.0 against a stated band of ≥ 0.95, and
+`interpretation` spans 0.6–0.95 against ≤ 0.8. **51 of 104 concepts breach the band their own
+tag declares.** A rule half a corpus breaks was never the rule its authors were following, and
+shipping it as an ERROR would get it switched off — which is what happened to V3.
 
 ## Open question for the human
 

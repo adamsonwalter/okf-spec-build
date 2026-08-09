@@ -41,6 +41,23 @@ In a legal, regulatory, or safety corpus that is the failure that costs the most
 the stale version looks identical to the current one and nobody re-reads a concept that
 appears settled.
 
+## Measured, 9 August 2026
+
+Against `privacy-act-okf` (104 concepts): **every** concept has a `# Related` section, 332
+relationship bullets exist, and **323 (97.3%) parse** once wrapped continuation lines are
+joined. All 323 use the bold `**rel**` marker — **none** relies on inferring a relationship
+from an English verb.
+
+So this is not prose parsing. It is a bold marker from a closed ten-item vocabulary in the
+kit's own format, and the caution against prose parsing does not apply.
+
+The 9 that do not parse are informative: four use unregistered inverse or past-tense forms
+(`**referenced-by**` ×3, `**superseded**` ×1), two are truncated at a section boundary, and
+three are genuine prose cross-references carrying no relationship at all. The inverse forms
+are the finding — authors need to state an edge backwards and the taxonomy gives them no way.
+
+Full staged plan: [docs/PLAN-graph-and-certainty.md](../docs/PLAN-graph-and-certainty.md).
+
 ## What filling it involves
 
 Parse `# Related` blocks in `scripts/`, where the format is ours, and emit the edges into

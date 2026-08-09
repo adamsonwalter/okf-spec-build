@@ -18,6 +18,10 @@ Exit codes:
     2  the bundle could not be read at all
 
 Stdlib only. Works on this kit and on any bundle generated from it.
+
+Design decisions behind these checks — what was rejected and why, with the
+measurements that drove each one — are recorded in docs/DECISIONS.md. Read it
+before changing a severity, relaxing a guard, or adding a rule.
 """
 
 from __future__ import annotations
@@ -587,14 +591,36 @@ def _check_coverage_contracts(bundle, registries, findings):
                                     f"resolved — " + "; ".join(unresolved[:5])))
 
 
+def _source_key(path, pattern, findings, contract_id):
+    """A source file's identity key: from its title via `pattern`, else its stem."""
+    stem = os.path.basename(path)[:-3]
+    if not pattern:
+        return stem
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            front, _, _ = split_frontmatter(handle.read())
+    except OSError:
+        return stem
+    title = str((front or {}).get("title", ""))
+    match = re.search(pattern, title)
+    if match and match.groups():
+        return match.group(1)
+    findings.append(Finding(
+        ERROR, "CHECK_7", os.path.basename(path),
+        f"contract {contract_id!r}: Source key pattern {pattern!r} does not match "
+        f"this file's title {title!r} — it has no identity key, so it cannot be "
+        f"diffed against the deliverable"))
+    return None
+
+
 def _check_deliverable_contracts(bundle, registries, findings):
     """CHECK_7 — source files and deliverable records correspond 1:1.
 
-    The source side is a glob and is checked. The deliverable side is a
-    hand-authored artifact whose record format is not specified by the kit, so
-    this searches it for each source identity key as a literal string. That is
-    weaker than a real diff, so a clean result is reported as SKIP rather than
-    PASS: a check that cannot fully decide must not read as if it did.
+    With a `Record pattern` declared, this is a real set diff in both directions,
+    so an orphan record in the deliverable is caught as well as a missing one.
+    Without one it can only prove every source appears somewhere by name, which
+    cannot see an orphan — so that case reports SKIP and never PASS. A check that
+    cannot fully decide must not read as though it did.
     """
     contracts = _live_contract_rows(registries["deliverable_contracts"])
     if not contracts:
@@ -621,18 +647,70 @@ def _check_deliverable_contracts(bundle, registries, findings):
                                     f"contract {contract_id!r}: source scope {scopes!r} "
                                     f"matches no files — the contract guards nothing"))
             continue
+
         content = bundle.read(deliverable_path)
-        missing = [os.path.basename(s)[:-3] for s in sources
-                   if os.path.basename(s)[:-3] not in content]
-        if missing:
-            findings.append(Finding(ERROR, "CHECK_7", deliverable,
-                                    f"contract {contract_id!r}: no record found for "
-                                    + ", ".join(missing[:5])))
-        else:
-            findings.append(Finding(SKIP, "CHECK_7", deliverable,
-                                    f"contract {contract_id!r}: {len(sources)} source file(s) "
-                                    f"all appear in the deliverable by name; a true "
-                                    f"record-level diff needs the deliverable's own format"))
+        record_pattern = _ident(row.get("Record pattern", ""))
+        source_pattern = _ident(row.get("Source key pattern", ""))
+
+        if not record_pattern or record_pattern in NONE_MARKERS:
+            missing = [os.path.basename(s)[:-3] for s in sources
+                       if os.path.basename(s)[:-3] not in content]
+            if missing:
+                findings.append(Finding(ERROR, "CHECK_7", deliverable,
+                                        f"contract {contract_id!r}: no record found for "
+                                        + ", ".join(missing[:5])))
+            else:
+                findings.append(Finding(
+                    SKIP, "CHECK_7", deliverable,
+                    f"contract {contract_id!r}: {len(sources)} source file(s) all appear "
+                    f"by name, but no 'Record pattern' is declared, so an extra record in "
+                    f"the deliverable cannot be detected. Declare one to make this a diff"))
+            continue
+
+        try:
+            found = re.findall(record_pattern, content)
+        except re.error as exc:
+            findings.append(Finding(ERROR, "CHECK_7", "ontology.md",
+                                    f"contract {contract_id!r}: Record pattern "
+                                    f"{record_pattern!r} is not a valid regex ({exc})"))
+            continue
+        if found and isinstance(found[0], tuple):
+            findings.append(Finding(ERROR, "CHECK_7", "ontology.md",
+                                    f"contract {contract_id!r}: Record pattern must have "
+                                    f"exactly one capture group"))
+            continue
+        deliverable_keys = set(found)
+
+        source_keys = {}
+        for path in sources:
+            key = _source_key(path, source_pattern, findings, contract_id)
+            if key is not None:
+                source_keys.setdefault(key, os.path.relpath(path, bundle.root))
+
+        if not deliverable_keys:
+            findings.append(Finding(
+                ERROR, "CHECK_7", deliverable,
+                f"contract {contract_id!r}: Record pattern {record_pattern!r} matched "
+                f"nothing. A pattern that finds no records makes every source file look "
+                f"missing, so this is reported rather than diffed"))
+            continue
+
+        absent = sorted(set(source_keys) - deliverable_keys)
+        orphans = sorted(deliverable_keys - set(source_keys))
+        if absent:
+            findings.append(Finding(
+                ERROR, "CHECK_7", deliverable,
+                f"contract {contract_id!r}: no record in the deliverable for "
+                + ", ".join(f"{k} ({source_keys[k]})" for k in absent[:5])))
+        if orphans:
+            # Only a real diff can see this. Filename matching never could.
+            findings.append(Finding(
+                ERROR, "CHECK_7", deliverable,
+                f"contract {contract_id!r}: record(s) in the deliverable with no source "
+                f"concept: " + ", ".join(orphans[:5])))
+        # A clean diff with a declared Record pattern is a genuine pass, and passes
+        # are silent like every other check. Reporting SKIP here would say "could
+        # not decide" about the one case where it fully did.
 
 
 # ---------------------------------------------------------------------------

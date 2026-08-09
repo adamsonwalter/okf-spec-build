@@ -8,6 +8,53 @@ Format: [Semantic Versioning](https://semver.org) — MAJOR.MINOR.PATCH
 
 ---
 
+## [2.7.0] — 2026-08-09
+
+### Added — CHECK_7 is a real set diff (ontology v0.7 → v0.8)
+
+CHECK_7 could only search a deliverable for source filenames, which proves every source
+appears *somewhere* but cannot see an **orphan** record. It reported SKIP, correctly, and that
+SKIP was hiding a check nobody could complete.
+
+- §Deliverable Parity Contracts gains **`Record pattern`** (one-group regex, read against the
+  deliverable) and **`Source key pattern`** (one-group regex, read against each source file's
+  `title`; defaults to the filename stem).
+- With them, CHECK_7 diffs **both directions** and names what is missing on each side.
+- Without a `Record pattern` it still reports **SKIP, never PASS** — a check that cannot fully
+  decide must not read as though it had.
+- A clean diff is now a **silent pass**, like every other check. Previously it reported SKIP,
+  which said "could not decide" about the one case where it fully did.
+
+The kit stays format-agnostic: a `deliverables/` artifact may be HTML, embedded JSON or a
+deck, and the contract declares how to read it rather than the kit guessing. Same shape as the
+Type Registry and Tag Taxonomy changes — declare it in the registry, let one check enforce
+every declaration.
+
+Guardrails, each from a real failure while building it: a pattern matching nothing is
+*reported*, not diffed, because it would otherwise make every source look missing; an invalid
+regex is an ERROR; a multi-group pattern is an ERROR; a source title the key pattern cannot
+match is an ERROR naming that file, since a source with no identity key is undiffable and
+dropping it silently would shrink the comparison set.
+
+Verified against the reference bundle: **9 source concepts and 9 deliverable records match
+1:1 on identity key** — a real result where there was previously a shrug.
+
+### Added — docs/DECISIONS.md
+
+Ten decisions behind `okf_check.py` and `okf_graph.py`: what was decided, the measurement that
+drove it, what was rejected, and how to tell if it was wrong. Cross-referenced from both
+scripts' docstrings, `README.md` and `AGENTS.MD`, so a reviewer meets it before changing a
+severity or relaxing a guard.
+
+It opens with the principle everything else follows from: **a check that did not run and a
+check that passed must never look the same afterwards.**
+
+### Added
+
+- 7 more tests for CHECK_7. **80 across the kit.**
+
+---
+
 ## [2.6.1] — 2026-08-09
 
 ### Fixed — a Stub is a placeholder, not a claim

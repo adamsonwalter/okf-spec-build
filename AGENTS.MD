@@ -483,6 +483,10 @@ ACTION:
 
       python3 scripts/okf_graph.py . --json
 
+  Before changing a severity, relaxing a guard or adding a rule, read
+  docs/DECISIONS.md — several of these were settled against measured evidence and
+  should not be re-litigated from first principles.
+
   DO NOT hand-audit these and report PASS. A check an agent performed and a check
   an agent skipped look identical afterwards, which is the whole reason the script
   exists. If the script is missing or errors, say so and report the audit as NOT

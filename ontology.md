@@ -325,19 +325,32 @@ note, so the next reader finds a decision instead of a hole.
 | `Contract ID` | Short slug identifying the contract. |
 | `Deliverable file` | Path to the artifact, relative to bundle root (typically under `deliverables/`). |
 | `Source scope` | The concept subdirectory, or a `type`/`tag` filter, being mirrored. |
-| `Identity key` | How ONE record in the deliverable maps 1:1 to ONE source file (a lettered/numbered `id`, a filename slug, a title match…). CONFORMANCE_AGENT diffs on this key, not just a count, so it can name exactly which record is missing or extra — not just report "counts don't match". |
+| `Identity key` | Prose, for a human: how ONE record in the deliverable maps 1:1 to ONE source file. The two pattern columns below are the machine-readable form of the same statement. |
+| `Record pattern` | A regex with **one capture group**, applied to the deliverable's text, yielding that deliverable's identity keys. This is what lets the checker diff a hand-authored artifact whose format the kit cannot know — the contract declares how to read it. Leave empty and the check falls back to searching for source filenames, which cannot detect an extra record and reports SKIP rather than PASS. |
+| `Source key pattern` | A regex with **one capture group**, applied to each source file's `title`, yielding that file's identity key. Leave empty to use the filename stem. |
 | `Severity` | `ERROR` (the deliverable ships broken or misleading to an end user/client) or `WARNING` (cosmetic drift only). Default to `ERROR` for anything client-facing. |
 
-| Contract ID | Deliverable file | Source scope | Identity key | Severity |
-|---|---|---|---|---|
-| *(none at bundle initialisation — register the first time a hand-authored deliverable snapshots concept data; see worked example below)* | — | — | — | — |
+**Why two regexes and not a format reader.** A `deliverables/` artifact is hand-authored and
+may be HTML, an embedded JSON blob, a slide deck — the kit has no business knowing. Declaring
+how to read it keeps the kit format-agnostic and makes CHECK_7 a real set diff that names
+what is missing on *each* side, including a record in the deliverable with no source file.
+Same shape as everything else here: declare it in the registry, let one check enforce every
+declaration.
+
+**A contract with no `Record pattern` reports SKIP, never PASS.** Filename matching can only
+prove that every source appears somewhere in the deliverable; it cannot see an orphan record,
+and a check that cannot fully decide must not read as if it did.
+
+| Contract ID | Deliverable file | Source scope | Identity key | Record pattern | Source key pattern | Severity |
+|---|---|---|---|---|---|---|
+| *(none at bundle initialisation — register the first time a hand-authored deliverable snapshots concept data; see worked example below)* | — | — | — | — | — | — |
 
 **Worked example** (illustrative only — this is not a live contract in this seed ontology; shown
 so a domain builder can copy the pattern exactly):
 
-| Contract ID | Deliverable file | Source scope | Identity key | Severity |
-|---|---|---|---|---|
-| `scenario-decision-map` | `deliverables/app-1-7-trigger-test-decision-map.html` | `scenarios/scenario-*.md` (one row per file) | Scenario letter — the concept's `title: "Scenario X — …"` matched against the deliverable's embedded `id` field | ERROR |
+| Contract ID | Deliverable file | Source scope | Identity key | Record pattern | Source key pattern | Severity |
+|---|---|---|---|---|---|---|
+| `scenario-decision-map` | `deliverables/app-1-7-trigger-test-decision-map.html` | `scenarios/scenario-*.md` (one row per file) | Scenario letter — the concept's `title: "Scenario X — …"` matched against the deliverable's embedded `id` field | `"id"\s*:\s*"([A-Z])"` | `Scenario ([A-Z])` | ERROR |
 
 This is the exact fix applied retroactively to the `privacy-act-okf` bundle after its
 `scenarios/` directory grew to nine concepts (A–I) while its interactive decision-map deliverable
@@ -458,3 +471,4 @@ types in existing concept files should flag for migration, not auto-migrate.
 | 0.5 | 2026-08-09 | Wrote down the conventions the checker already enforces, so the spec and the code agree. V4 now carries its `archive/` exemption in the rule text — it previously contradicted §Concept Hierarchy Rules 5 outright for an archived stub, and only `okf_check.py` knew the resolution. Added §Conventions the checker depends on: the `**Worked example**` marker that keeps an illustration out of the live contract registries, the rule that a subtree with its own `ontology.md` is a separate bundle governed by its own registry, and the list of directories that are not concept trees. Each was implemented in code in v2.4.0 and documented nowhere an author would look. |
 | 0.6 | 2026-08-09 | Relationships become traversable. Added §Writing a relationship so it can be traversed: a `# Related` bullet is an edge, the relationship is marked in bold from the closed ten, one bullet carries one relationship and any number of links, wrapped bullets are joined, and a bullet with links but no marker is an allowed cross-reference that produces no edge. **Relationships are directional and inverses are not registered** — `referenced-by`, `depended-on-by`, `superseded` fail the build; put the edge on the other concept instead. Keeps the vocabulary closed at ten, which is what makes an unregistered relationship detectable. Added V10 (every edge target resolves to a concept) and V11 (no edge points into an archived or superseded concept), both ERROR — V11 is the decay guard, since a superseded concept still cited in prose reads exactly like a live one and V6 only guards the frontmatter half. |
 | 0.7 | 2026-08-09 | Certainty becomes checkable without imposing a vocabulary. §Tag Taxonomy gains a **Certainty band** column; V12 enforces every declaration, so registering a certainty tag is a table cell rather than a rule. Bands ship empty — they are a domain's epistemics, not the kit's — with the instruction to set them to what the corpus actually holds, because a band tighter than authored practice fails a pile of concepts on day one and gets switched off. V12 is WARNING and stays one until a real bundle passes clean. **V3 rewritten**: a concept carrying `confidence` must show its working — either `confidence_sources` *or* a `# Citations` section. The old form presumed confidence was computed from a countable set; measured against the reference bundle, 0 of 104 concepts carry `confidence_sources` and 104 of 104 carry `# Citations`, so the rule was wrong for judgment-based corpora and was silently dropped rather than argued with. Registered V10 and V11 from v0.6 in the rules table. |
+| 0.8 | 2026-08-09 | CHECK_7 becomes a real set diff. §Deliverable Parity Contracts gains **`Record pattern`** (a one-group regex read against the deliverable's text) and **`Source key pattern`** (a one-group regex read against each source file's `title`, defaulting to the filename stem). The kit stays format-agnostic — a hand-authored artifact may be HTML, embedded JSON or a deck, and the contract declares how to read it rather than the kit guessing. The diff names what is missing on *each* side, so an orphan record in the deliverable is now detectable; filename matching never could see one. A contract with no `Record pattern` reports **SKIP, never PASS**. |

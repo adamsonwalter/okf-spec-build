@@ -19,6 +19,10 @@ Exit codes:
     0  edges extracted, no ERROR-severity findings
     1  at least one ERROR (unregistered relationship, or zero edges extracted)
     2  the bundle could not be read
+
+See docs/DECISIONS.md D2, D3 and D9 for why relationships are directional, why
+the marker is parsed rather than the prose, and why the zero-edge guard has no
+threshold.
 """
 
 from __future__ import annotations

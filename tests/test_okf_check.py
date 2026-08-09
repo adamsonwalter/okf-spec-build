@@ -58,15 +58,15 @@ tags: [ontology, system, governance]
 
 # Deliverable Parity Contracts
 
-| Contract ID | Deliverable file | Source scope | Identity key | Severity |
-|---|---|---|---|---|
-| *(none at bundle initialisation)* | — | — | — | — |
+| Contract ID | Deliverable file | Source scope | Identity key | Record pattern | Source key pattern | Severity |
+|---|---|---|---|---|---|---|
+| *(none at bundle initialisation)* | — | — | — | — | — | — |
 
 **Worked example** (illustrative only — not a live contract):
 
-| Contract ID | Deliverable file | Source scope | Identity key | Severity |
-|---|---|---|---|---|
-| `made-up` | `deliverables/nope.html` | `scenarios/scenario-*.md` (one per file) | letter | ERROR |
+| Contract ID | Deliverable file | Source scope | Identity key | Record pattern | Source key pattern | Severity |
+|---|---|---|---|---|---|---|
+| `made-up` | `deliverables/nope.html` | `scenarios/scenario-*.md` (one per file) | letter | — | — | ERROR |
 
 # Source Coverage Contracts
 
@@ -437,6 +437,72 @@ class TestSupersession(BundleFixture):
         self.write("new.md", CONCEPT.replace(
             "tags: [system]", "tags: [system]\nsupersedes: old"))
         self.assertNotIn("V6", self.codes(K.ERROR))
+
+
+class TestDeliverableParity(BundleFixture):
+    """CHECK_7 — a real set diff once the contract declares how to read records."""
+
+    ROW = "| *(none at bundle initialisation)* | — | — | — | — | — | — |"
+
+    def _contract(self, record_pattern="—", source_pattern="—"):
+        self.write("ontology.md", ONTOLOGY.replace(
+            self.ROW,
+            "| `map` | `deliverables/map.html` | `items/item-*.md` | letter | "
+            f"{record_pattern} | {source_pattern} | ERROR |"))
+
+    def _items(self, letters):
+        for letter in letters:
+            self.write(f"items/item-{letter.lower()}.md",
+                       CONCEPT.replace("title: A Thing", f"title: Item {letter} — a thing"))
+
+    def _deliverable(self, letters):
+        records = ",".join('{"id":"%s"}' % l for l in letters)
+        self.write("deliverables/map.html", f"<script>[{records}]</script>")
+
+    def test_matching_sets_pass_silently(self):
+        self._contract('`"id":"([A-Z])"`', "`Item ([A-Z])`")
+        self._items("AB"); self._deliverable("AB")
+        self.assertNotIn("CHECK_7", self.codes())
+
+    def test_missing_record_is_named(self):
+        self._contract('`"id":"([A-Z])"`', "`Item ([A-Z])`")
+        self._items("AB"); self._deliverable("A")
+        self.assertFails("CHECK_7")
+        msg = " ".join(f.message for f in self.run_checks() if f.check == "CHECK_7")
+        self.assertIn("B", msg)
+
+    def test_orphan_record_is_named(self):
+        # Only a real diff can see this; filename matching never could.
+        self._contract('`"id":"([A-Z])"`', "`Item ([A-Z])`")
+        self._items("A"); self._deliverable("AZ")
+        msg = " ".join(f.message for f in self.run_checks() if f.check == "CHECK_7")
+        self.assertIn("no source concept", msg)
+
+    def test_no_record_pattern_reports_skip_never_pass(self):
+        self._contract()
+        self._items("A")
+        self.write("deliverables/map.html", "<p>item-a</p>")
+        skips = [f for f in self.run_checks()
+                 if f.check == "CHECK_7" and f.severity == K.SKIP]
+        self.assertTrue(skips)
+        self.assertIn("cannot be detected", skips[0].message)
+
+    def test_pattern_matching_nothing_is_reported_not_diffed(self):
+        self._contract('`"id":"([A-Z])"`', "`Item ([A-Z])`")
+        self._items("A"); self.write("deliverables/map.html", "<p>nothing here</p>")
+        msg = " ".join(f.message for f in self.run_checks() if f.check == "CHECK_7")
+        self.assertIn("matched nothing", msg)
+
+    def test_invalid_regex_is_an_error(self):
+        self._contract("`([A-Z`", "`Item ([A-Z])`")
+        self._items("A"); self._deliverable("A")
+        self.assertFails("CHECK_7")
+
+    def test_source_title_not_matching_the_key_pattern_is_an_error(self):
+        self._contract('`"id":"([A-Z])"`', "`Scenario ([A-Z])`")
+        self._items("A"); self._deliverable("A")
+        msg = " ".join(f.message for f in self.run_checks() if f.check == "CHECK_7")
+        self.assertIn("no identity key", msg)
 
 
 class TestCoverageContracts(BundleFixture):

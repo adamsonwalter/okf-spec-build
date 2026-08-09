@@ -294,6 +294,14 @@ class TestLinksTagsAndStubs(BundleFixture):
         self.write("archive/old.md", CONCEPT.replace("type: Concept", "type: Stub"))
         self.assertNotIn("V4", self.codes(K.WARNING))
 
+    def test_declared_zero_sources_is_not_a_missing_field(self):
+        # 'confidence_sources: 0' is correct for a Stub at confidence 0.0.
+        # Treating 0 as absent would flag every properly-formed stub.
+        self.write("a-thing.md", CONCEPT.replace(
+            "tags: [system]", "tags: [system]\nconfidence: 0.0\nconfidence_sources: 0"))
+        flagged = [f.path for f in self.run_checks() if f.check == "V3"]
+        self.assertNotIn("a-thing.md", flagged)
+
     def test_confidence_without_sources_warns(self):
         self.write("a-thing.md", CONCEPT.replace(
             "tags: [system]", "tags: [system]\nconfidence: 0.8"))

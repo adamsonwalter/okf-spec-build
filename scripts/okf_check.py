@@ -320,8 +320,11 @@ def _check_types_and_fields(bundle, registries, concepts, findings):
             findings.append(Finding(WARNING, "V4", rel,
                                     "type: Stub must live in the stubs/ subdirectory"))
 
-        # V3 — confidence without its sources.
-        if front.get("confidence") is not None and not front.get("confidence_sources"):
+        # V3 — confidence without its sources. Test for presence, not truth:
+        # 'confidence_sources: 0' is a declared zero (correct for a Stub carrying
+        # confidence 0.0), not a missing field.
+        if (front.get("confidence") is not None
+                and front.get("confidence_sources") is None):
             findings.append(Finding(WARNING, "V3", rel,
                                     "carries 'confidence' with no 'confidence_sources'"))
 

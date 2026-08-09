@@ -32,7 +32,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from okf_check import (ERROR, SKIP, WARNING, Bundle, Finding, parse_tables,  # noqa: E402
-                       split_frontmatter, _ident)
+                       split_frontmatter, strip_code_fences, _ident)
 
 RELATED_SECTION = re.compile(r"^#+\s*Related\s*$(.*?)(?=^#\s|\Z)", re.M | re.S)
 BOLD_MARKER = re.compile(r"\*\*([a-z][a-z-]*)\*\*")
@@ -120,7 +120,7 @@ def extract_edges(bundle):
             continue
         concepts_seen += 1
 
-        match = RELATED_SECTION.search(body)
+        match = RELATED_SECTION.search(strip_code_fences(body))
         if not match:
             continue
         first_line = body[:match.start(1)].count("\n") + 1

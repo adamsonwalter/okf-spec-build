@@ -170,21 +170,43 @@ Unregistered tags trigger a Type Orphan gap flag (T3 only; see `optional/LLM_WIK
 
 ## System Tags (reserved)
 
-| Tag | Meaning |
-|---|---|
-| `system` | Bundle infrastructure: ontology, instructions, health reports |
-| `governance` | Policies, rules, constraints |
-| `stub` | Incomplete / placeholder concept |
-| `review-required` | Needs human or agent verification |
-| `archived` | Superseded or deprecated |
-| `inference` | Agent-derived, not directly sourced |
-| `disputed` | Contains an unresolved contradiction |
-| `coverage` | A Coverage Ledger or other bundle-completeness audit artifact |
+### Certainty bands — declared, not assumed
+
+A bundle may use tags to express how settled a claim is (`confirmed`, `contested`,
+`interpretation`, or whatever its domain calls them). Where it does, the tag may declare the
+`confidence` range it implies, in the **Certainty band** column. V12 then enforces every
+declaration, so a bundle registering a new certainty tag writes a table cell, not a rule.
+
+Syntax: `>= 0.80`, `<= 0.95`, or `0.60 - 0.90`. An empty cell means the tag says nothing
+about confidence and is never checked.
+
+**Bands are a domain's epistemics, not the kit's.** The kit ships them empty. Do not
+hard-code one bundle's vocabulary here.
+
+**Set the band to what the corpus actually holds.** A band tighter than authored practice
+does not raise quality — it fails a pile of concepts on day one, gets switched off, and then
+looks present while enforcing nothing. That is how V3 was lost. Measure first, declare
+second, and tighten only when the corpus has moved.
+
+**V12 is a WARNING, and should stay one until a real bundle passes it clean.** Certainty is a
+judgment; a band is a sanity check on that judgment, not an authority over it.
+
+| Tag | Meaning | Certainty band |
+|---|---|---|
+| `system` | Bundle infrastructure: ontology, instructions, health reports | |
+| `governance` | Policies, rules, constraints | |
+| `stub` | Incomplete / placeholder concept | |
+| `review-required` | Needs human or agent verification | |
+| `archived` | Superseded or deprecated | |
+| `inference` | Agent-derived, not directly sourced | |
+| `disputed` | Contains an unresolved contradiction | |
+| `coverage` | A Coverage Ledger or other bundle-completeness audit artifact | |
 
 ## Domain Tags
 
 > Add project-specific tags below as the bundle grows.
-> Format: `| tag-name | meaning |`
+> Format: `| tag-name | meaning | certainty band |`
+> Leave the band empty unless the tag genuinely implies a confidence range.
 
 *(empty at bundle initialisation — add as needed)*
 
@@ -222,13 +244,16 @@ CONFORMANCE_AGENT checks these rules in addition to OKF v0.1 base conformance (�
 |---|---|---|
 | V1 | Every concept's `type` is registered in this Ontology | ERROR |
 | V2 | Every concept's `tags` are registered in this Ontology | WARNING |
-| V3 | No concept has `confidence` without `confidence_sources` | WARNING |
+| V3 | A concept carrying `confidence` shows its working — either `confidence_sources`, or a `# Citations` section | WARNING |
 | V4 | Every `type: Stub` concept is in the `stubs/` subdirectory, **except** an archived stub, which lives in `archive/` per §Concept Hierarchy Rules 5 | WARNING |
 | V5 | Every `type: Inference` has `inferred_from` listing at least one source | ERROR |
 | V6 | No concept has `superseded_by` without a reciprocal `supersedes` in the target | ERROR |
 | V7 | Every contradiction comment `<!-- CONFLICT -->` has a corresponding LOG entry | WARNING |
 | V8 | This `ontology.md` file has `memory_tier: semantic` and `confidence: 1.0` | ERROR |
 | V9 | Every concept carries the universal required frontmatter, plus its type's `Required Fields` and `Required Sections` from §Type Registry | ERROR |
+| V10 | Every relationship edge target resolves to a concept in this bundle | ERROR |
+| V11 | No relationship edge points into an archived or superseded concept | ERROR |
+| V12 | A concept's `confidence` falls inside the declared band of every tag it carries | WARNING |
 
 ## Conventions the checker depends on
 
@@ -432,3 +457,4 @@ types in existing concept files should flag for migration, not auto-migrate.
 | 0.4 | 2026-08-09 | Type Registry now **declares validity**, not just narrates it: added `Required Sections` and `Required Fields` columns to all three type tables, plus a universal required-frontmatter list. `Typical Body Sections` is retained and remains advisory, so any positional parser reading the first three columns is unaffected. Added **V9**, which enforces every type's declared requirements — registering a type with its own requirements is now a table row rather than a new hand-written rule, which is what stopped V-T3a-style per-type rules from scaling. Added the **rule-numbering convention**: V1–V9 are reserved by the kit, bundle rules must be `V-<slug>`. Generalised from a live collision — `privacy-act-okf` uses V5/V6 for parity checks while the kit uses them for inference sourcing and supersession reciprocity, both ERROR in both places. Paired with `scripts/okf_check.py`, which executes V1–V9 and CHECK_1–CHECK_9 in code. |
 | 0.5 | 2026-08-09 | Wrote down the conventions the checker already enforces, so the spec and the code agree. V4 now carries its `archive/` exemption in the rule text — it previously contradicted §Concept Hierarchy Rules 5 outright for an archived stub, and only `okf_check.py` knew the resolution. Added §Conventions the checker depends on: the `**Worked example**` marker that keeps an illustration out of the live contract registries, the rule that a subtree with its own `ontology.md` is a separate bundle governed by its own registry, and the list of directories that are not concept trees. Each was implemented in code in v2.4.0 and documented nowhere an author would look. |
 | 0.6 | 2026-08-09 | Relationships become traversable. Added §Writing a relationship so it can be traversed: a `# Related` bullet is an edge, the relationship is marked in bold from the closed ten, one bullet carries one relationship and any number of links, wrapped bullets are joined, and a bullet with links but no marker is an allowed cross-reference that produces no edge. **Relationships are directional and inverses are not registered** — `referenced-by`, `depended-on-by`, `superseded` fail the build; put the edge on the other concept instead. Keeps the vocabulary closed at ten, which is what makes an unregistered relationship detectable. Added V10 (every edge target resolves to a concept) and V11 (no edge points into an archived or superseded concept), both ERROR — V11 is the decay guard, since a superseded concept still cited in prose reads exactly like a live one and V6 only guards the frontmatter half. |
+| 0.7 | 2026-08-09 | Certainty becomes checkable without imposing a vocabulary. §Tag Taxonomy gains a **Certainty band** column; V12 enforces every declaration, so registering a certainty tag is a table cell rather than a rule. Bands ship empty — they are a domain's epistemics, not the kit's — with the instruction to set them to what the corpus actually holds, because a band tighter than authored practice fails a pile of concepts on day one and gets switched off. V12 is WARNING and stays one until a real bundle passes clean. **V3 rewritten**: a concept carrying `confidence` must show its working — either `confidence_sources` *or* a `# Citations` section. The old form presumed confidence was computed from a countable set; measured against the reference bundle, 0 of 104 concepts carry `confidence_sources` and 104 of 104 carry `# Citations`, so the rule was wrong for judgment-based corpora and was silently dropped rather than argued with. Registered V10 and V11 from v0.6 in the rules table. |

@@ -2,6 +2,14 @@
 
 ## 2026-08-09
 
+* **Kit**: [ontology.md](ontology.md) — v0.6 → v0.7. §Tag Taxonomy gains a **Certainty band** column (`>= 0.80`, `<= 0.95`, `0.60 - 0.90`); V12 enforces every declaration, so registering a certainty tag is a table cell rather than a rule. Bands ship empty — one domain's epistemics must not be hard-coded into every bundle. Instruction added to set the band to what the corpus actually holds: measured, the previously-stated bands were breached by 51 of 104 concepts, and a band tighter than authored practice fails a pile on day one and gets switched off. V12 is WARNING and stays one until a real bundle passes clean. **V3 rewritten** — a concept carrying `confidence` shows its working, either `confidence_sources` *or* a `# Citations` section. Measured: 0 of 104 concepts carry `confidence_sources`, 104 of 104 carry `# Citations`, so the old form was wrong for judgment-based corpora. Registered V10–V12 in the rules table.
+* **Kit**: [scripts/okf_check.py](scripts/okf_check.py) — implements the rewritten V3 and new V12; an unreadable band is an ERROR, never silence, so a typo cannot switch the check off. **Fixed CHECK_5**: links inside fenced code blocks are examples, not links. Adding a worked example to `ontology.md` immediately produced three false positives against the kit itself. `okf_graph.py` had the same exposure and is fixed with it.
+* **Kit**: [AGENTS.MD](AGENTS.MD) — CONFORMANCE_AGENT now lists V9–V12 and the `okf_graph.py` command, and is told explicitly not to resolve a V12 warning by re-grading a concept to fit a band. A band half the corpus breaches is the thing that is wrong; re-grading to satisfy it hides material rather than correcting it.
+* **Kit**: [tests/test_okf_check.py](tests/test_okf_check.py) — 12 more tests covering band parsing, V12 severity, and the three V3 outcomes. 70 across the kit.
+* **Kit**: [CHANGELOG.md](CHANGELOG.md) — v2.6.0.
+
+## 2026-08-09
+
 * **Kit**: [scripts/okf_graph.py](scripts/okf_graph.py) — new. Extracts typed edges from every `# Related` section; 384 edges across 101 concepts in the reference bundle, every target resolving. Parses a bold marker from the closed ten-item taxonomy, not prose — measured, 323 of 332 bullets already carry the marker and none relies on an unmarked English verb, so the standing caution against prose parsing does not apply. Joins wrapped continuation lines before matching, worth 18 edges alone.
 * **Kit**: [scripts/okf_check.py](scripts/okf_check.py) — added V10 (every edge target resolves to a concept) and V11 (no edge points into an archived or superseded concept), both ERROR. V11 is the decay guard V6 could only half-cover. The graph module is imported lazily and its absence is reported as SKIP, never as a pass.
 * **Kit**: [tests/test_okf_graph.py](tests/test_okf_graph.py) — new, 18 tests. 58 across the kit.

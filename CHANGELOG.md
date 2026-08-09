@@ -8,6 +8,56 @@ Format: [Semantic Versioning](https://semver.org) — MAJOR.MINOR.PATCH
 
 ---
 
+## [2.6.0] — 2026-08-09
+
+### Added — certainty is checkable without the kit imposing a vocabulary (ontology v0.6 → v0.7)
+
+Part B of `docs/PLAN_GRAPH_AND_CERTAINTY.md`. A concept could carry a numeric `confidence`
+and a certainty tag with nothing relating them, so a concept tagged `confirmed` at 0.6 was
+valid and undetectable.
+
+- **§Tag Taxonomy gains a `Certainty band` column.** `>= 0.80`, `<= 0.95` or `0.60 - 0.90`.
+  **V12** enforces every declaration, so registering a certainty tag is a table cell, not a
+  rule — the same shape as the v0.4 Type Registry change.
+- The kit ships every band **empty**. `confirmed`/`contested`/`interpretation` is one
+  domain's epistemics and must not be hard-coded into every bundle.
+- **V12 is a WARNING and should stay one** until a real bundle passes it clean. Certainty is
+  a judgment; a band is a sanity check on that judgment, not an authority over it.
+- An unreadable band is an **ERROR**, never silence — a typo must not switch the check off.
+
+**Set the band to what the corpus actually holds.** Measured against the reference bundle,
+the previously-stated bands (`confirmed` ≥ 0.95, `interpretation` ≤ 0.8) were breached by
+**51 of 104 concepts**. A band tighter than authored practice does not raise quality: it
+fails a pile of concepts on day one, gets switched off, and then looks present while
+enforcing nothing. That is how V3 was lost.
+
+### Changed — V3 now asks for working, not for a count
+
+`V3` was *"no concept has `confidence` without `confidence_sources`"*, which presumed
+confidence is computed from a countable set. Measured: **0 of 104** concepts in the reference
+bundle carry `confidence_sources`; **104 of 104** carry a `# Citations` section. The rule was
+wrong for judgment-based corpora, and was silently dropped rather than argued with.
+
+V3 now reads: *a concept carrying `confidence` shows its working — either `confidence_sources`,
+or a `# Citations` section.* The reference bundle passes it 104/104, so the divergence closes
+by the rule being corrected rather than by the bundle being exempted.
+
+### Fixed
+
+- **CHECK_5 no longer reports links inside fenced code blocks.** An example in a ``` fence is
+  not a link; flagging it reports a broken link for a file that was never meant to exist, and
+  teaches authors that the checker cries wolf. Found by adding a worked example to
+  `ontology.md`, which immediately produced three false positives against itself.
+  `okf_graph.py` had the same exposure and is fixed with it.
+
+### Added
+
+- `AGENTS.MD` — CONFORMANCE_AGENT now lists V9–V12 and the `okf_graph.py` command, and is
+  told explicitly **not** to resolve a V12 warning by re-grading a concept to fit a band.
+- 12 more tests. 70 across the kit.
+
+---
+
 ## [2.5.0] — 2026-08-09
 
 ### Added — relationships are traversable (Part A of docs/PLAN_GRAPH_AND_CERTAINTY.md)

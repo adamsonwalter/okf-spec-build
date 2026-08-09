@@ -278,6 +278,11 @@ class TestLinksTagsAndStubs(BundleFixture):
         self.write("a-thing.md", CONCEPT + "\nSee [other](./missing.md).\n")
         self.assertWarns("CHECK_5")
 
+    def test_link_inside_a_code_fence_is_an_example_not_a_link(self):
+        self.write("a-thing.md", CONCEPT +
+                   "\n```markdown\n- See [Example](../nowhere/example.md) — **references**.\n```\n")
+        self.assertNotIn("CHECK_5", self.codes(K.WARNING))
+
     def test_external_link_ignored(self):
         self.write("a-thing.md", CONCEPT + "\nSee [site](https://example.org).\n")
         self.assertNotIn("CHECK_5", self.codes(K.WARNING))
@@ -306,6 +311,90 @@ class TestLinksTagsAndStubs(BundleFixture):
         self.write("a-thing.md", CONCEPT.replace(
             "tags: [system]", "tags: [system]\nconfidence: 0.8"))
         self.assertWarns("V3")
+
+
+class TestCertaintyBands(BundleFixture):
+    """V12 — declared in the registry, enforced by one rule, WARNING by design."""
+
+    def _with_band(self, band):
+        self.write("ontology.md", ONTOLOGY.replace(
+            "| Tag | Meaning |\n|---|---|\n| `system` | Infrastructure |",
+            "| Tag | Meaning | Certainty band |\n|---|---|---|\n"
+            "| `system` | Infrastructure | |\n"
+            f"| `confirmed` | Settled | {band} |"))
+
+    def _concept_at(self, confidence):
+        self.write("a-thing.md", CONCEPT.replace(
+            "tags: [system]",
+            f"tags: [system, confirmed]\nconfidence: {confidence}\nconfidence_sources: 1"))
+
+    def test_confidence_inside_the_band_passes(self):
+        self._with_band(">= 0.80")
+        self._concept_at(0.9)
+        self.assertNotIn("V12", self.codes())
+
+    def test_confidence_below_a_ge_band_warns(self):
+        self._with_band(">= 0.80")
+        self._concept_at(0.6)
+        self.assertWarns("V12")
+
+    def test_le_band(self):
+        self._with_band("<= 0.80")
+        self._concept_at(0.95)
+        self.assertWarns("V12")
+
+    def test_range_band(self):
+        self._with_band("0.60 - 0.90")
+        self._concept_at(0.95)
+        self.assertWarns("V12")
+
+    def test_band_breach_never_blocks(self):
+        # A band is a sanity check on a judgment, not an authority over it.
+        self._with_band(">= 0.95")
+        self._concept_at(0.6)
+        _, exit_code = K.validate(self.onto) if hasattr(K, "validate") else (None, 0)
+        self.assertNotIn("V12", self.codes(K.ERROR))
+
+    def test_empty_band_is_never_checked(self):
+        self._with_band("")
+        self._concept_at(0.1)
+        self.assertNotIn("V12", self.codes())
+
+    def test_unreadable_band_is_an_error_not_silence(self):
+        self._with_band("fairly high")
+        self._concept_at(0.9)
+        self.assertFails("ONTOLOGY")
+
+    def test_band_parsing(self):
+        self.assertEqual(K.parse_band(">= 0.80"), (0.8, 1.0))
+        self.assertEqual(K.parse_band("<= 0.95"), (0.0, 0.95))
+        self.assertEqual(K.parse_band("0.60 - 0.90"), (0.6, 0.9))
+        self.assertEqual(K.parse_band("0.60 – 0.90"), (0.6, 0.9))
+        self.assertIsNone(K.parse_band("—"))
+        self.assertIsNone(K.parse_band(""))
+        self.assertEqual(K.parse_band("high-ish"), "malformed")
+
+
+class TestShowYourWorking(BundleFixture):
+    """V3 — confidence must show working: sources OR a Citations section."""
+
+    def test_confidence_with_citations_section_passes(self):
+        self.write("a-thing.md", CONCEPT.replace(
+            "tags: [system]", "tags: [system]\nconfidence: 0.9") + "\n## Citations\n\n- a source\n")
+        flagged = [f.path for f in self.run_checks() if f.check == "V3"]
+        self.assertNotIn("a-thing.md", flagged)
+
+    def test_confidence_with_sources_passes(self):
+        self.write("a-thing.md", CONCEPT.replace(
+            "tags: [system]", "tags: [system]\nconfidence: 0.9\nconfidence_sources: 3"))
+        flagged = [f.path for f in self.run_checks() if f.check == "V3"]
+        self.assertNotIn("a-thing.md", flagged)
+
+    def test_confidence_with_neither_warns(self):
+        self.write("a-thing.md", CONCEPT.replace(
+            "tags: [system]", "tags: [system]\nconfidence: 0.9"))
+        flagged = [f.path for f in self.run_checks() if f.check == "V3"]
+        self.assertIn("a-thing.md", flagged)
 
 
 class TestSupersession(BundleFixture):

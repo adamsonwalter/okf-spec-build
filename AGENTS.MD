@@ -472,6 +472,17 @@ ACTION:
   links resolve, keys diff, a Status column has no "Not yet checked" — so the
   script decides them, not you. Report its output as the result.
 
+  The script also runs V1-V12, which cover more than CHECK_1..CHECK_9:
+    V9   every concept meets its type's declared Required Fields / Sections
+    V10  every relationship edge target resolves to a concept
+    V11  no relationship edge points into an archived or superseded concept
+    V12  a concept's confidence sits inside the band its tags declare (WARNING)
+
+  For the relationship graph on its own — edge counts by type, or JSON for an
+  application to traverse:
+
+      python3 scripts/okf_graph.py . --json
+
   DO NOT hand-audit these and report PASS. A check an agent performed and a check
   an agent skipped look identical afterwards, which is the whole reason the script
   exists. If the script is missing or errors, say so and report the audit as NOT
@@ -483,6 +494,10 @@ ACTION:
       the Status column only, and cannot re-derive the ledger (see CHECK_9)
     - whether a CHECK_7 SKIP hides a real record-level mismatch inside a
       hand-authored deliverable whose format the kit does not specify
+    - whether a V12 warning means the concept is mis-graded or the band is
+      wrong. Do not "fix" a warning by moving a concept's confidence to fit a
+      band; a band that half the corpus breaches is the thing that is wrong,
+      and re-grading to satisfy it hides material rather than correcting it
 
 ─── STATE: SCAN ─────────────────────────────────────────────────────────────────
 ACTION:

@@ -131,6 +131,35 @@ def parse_tables(text):
     return tables
 
 
+BAND_GE = re.compile(r"^>=\s*([0-9.]+)$")
+BAND_LE = re.compile(r"^<=\s*([0-9.]+)$")
+BAND_RANGE = re.compile(r"^([0-9.]+)\s*[-–—]\s*([0-9.]+)$")
+
+
+def parse_band(text):
+    """A Certainty band cell as (low, high).
+
+    None when the tag declares nothing. The string "malformed" when a band was
+    written but cannot be read — an unreadable band must be reported, never
+    treated as absent, or a typo silently switches the check off.
+    """
+    if not text:
+        return None
+    cleaned = text.strip().strip("`").strip()
+    if not cleaned or cleaned.lower() in NONE_MARKERS:
+        return None
+    m = BAND_GE.match(cleaned)
+    if m:
+        return (float(m.group(1)), 1.0)
+    m = BAND_LE.match(cleaned)
+    if m:
+        return (0.0, float(m.group(1)))
+    m = BAND_RANGE.match(cleaned)
+    if m:
+        return (float(m.group(1)), float(m.group(2)))
+    return "malformed"
+
+
 def _listy(value):
     """A registry cell holding zero or more comma-separated names."""
     if value is None:
@@ -181,7 +210,7 @@ class Bundle:
 
 def load_registries(bundle, findings):
     """Types, tags and rules from ontology.md, keyed by name."""
-    registries = {"types": {}, "tags": set(), "relationships": set(),
+    registries = {"types": {}, "tags": set(), "bands": {}, "relationships": set(),
                   "rules": {}, "deliverable_contracts": [], "coverage_contracts": []}
     if not os.path.exists(bundle.ontology_path):
         findings.append(Finding(ERROR, "ONTOLOGY", "ontology.md",
@@ -203,6 +232,15 @@ def load_registries(bundle, findings):
                 tag = _ident(row["Tag"])
                 if tag and not tag.startswith("*"):
                     registries["tags"].add(tag)
+                    band = parse_band(row.get("Certainty band"))
+                    if band == "malformed":
+                        findings.append(Finding(
+                            ERROR, "ONTOLOGY", "ontology.md",
+                            f"tag {tag!r} has an unreadable Certainty band "
+                            f"{row.get('Certainty band')!r}; use '>= 0.80', "
+                            f"'<= 0.95' or '0.60 - 0.90'"))
+                    elif band:
+                        registries["bands"][tag] = band
             if "Relationship" in row:
                 registries["relationships"].add(_ident(row["Relationship"]))
             if "Rule" in row and "Check" in row:
@@ -347,13 +385,38 @@ def _check_types_and_fields(bundle, registries, concepts, findings):
             findings.append(Finding(WARNING, "V4", rel,
                                     "type: Stub must live in the stubs/ subdirectory"))
 
-        # V3 — confidence without its sources. Test for presence, not truth:
-        # 'confidence_sources: 0' is a declared zero (correct for a Stub carrying
-        # confidence 0.0), not a missing field.
-        if (front.get("confidence") is not None
-                and front.get("confidence_sources") is None):
-            findings.append(Finding(WARNING, "V3", rel,
-                                    "carries 'confidence' with no 'confidence_sources'"))
+        # V3 — a concept carrying confidence shows its working. Either a counted
+        # set of sources, or a Citations section. The old form presumed
+        # confidence was computed; measured against a real corpus, 0 of 104
+        # concepts carried confidence_sources and 104 of 104 carried Citations,
+        # so the rule was wrong for judgment-based bundles and got dropped
+        # rather than argued with. Presence, not truth: 'confidence_sources: 0'
+        # is a declared zero, correct for a Stub at confidence 0.0.
+        if front.get("confidence") is not None:
+            has_sources = front.get("confidence_sources") is not None
+            has_citations = any(h.strip().lower().startswith("citations")
+                                for h in HEADING.findall(body))
+            if not has_sources and not has_citations:
+                findings.append(Finding(
+                    WARNING, "V3", rel,
+                    "carries 'confidence' but shows no working — add "
+                    "'confidence_sources', or a '# Citations' section"))
+
+        # V12 — confidence sits inside the band its tags declare. WARNING by
+        # design: certainty is a judgment and a band is a sanity check on it,
+        # not an authority over it.
+        confidence = front.get("confidence")
+        if confidence is not None:
+            for tag in front.get("tags") or []:
+                band = registries["bands"].get(tag)
+                if not band:
+                    continue
+                low, high = band
+                if not (low <= float(confidence) <= high):
+                    findings.append(Finding(
+                        WARNING, "V12", rel,
+                        f"confidence {confidence} is outside the band "
+                        f"{low}-{high} declared for tag {tag!r}"))
 
         # V8 — the ontology's own frontmatter.
         if rel == "ontology.md":
@@ -368,11 +431,28 @@ def _check_types_and_fields(bundle, registries, concepts, findings):
                                     "reserved filename used as a concept document"))
 
 
+def strip_code_fences(text):
+    """Body text with fenced blocks removed.
+
+    A link inside a ``` fence is an example, not a link. Checking it reports a
+    broken link for a file that was never meant to exist — and worse, teaches
+    authors that the checker cries wolf.
+    """
+    out, fenced = [], False
+    for line in text.split("\n"):
+        if line.lstrip().startswith("```"):
+            fenced = not fenced
+            continue
+        if not fenced:
+            out.append(line)
+    return "\n".join(out)
+
+
 def _check_links(bundle, concepts, findings):
     """CHECK_5 — internal markdown links resolve to files on disk."""
     for path, rel, front, body, _ in concepts:
         base = os.path.dirname(path)
-        for target in MD_LINK.findall(body):
+        for target in MD_LINK.findall(strip_code_fences(body)):
             target = target.strip()
             if target.startswith(("http://", "https://", "mailto:", "#")):
                 continue

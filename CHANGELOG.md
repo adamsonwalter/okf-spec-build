@@ -8,6 +8,61 @@ Format: [Semantic Versioning](https://semver.org) — MAJOR.MINOR.PATCH
 
 ---
 
+## [2.4.0] — 2026-08-09
+
+### Added — the kit now ships executable checks
+
+- `scripts/okf_check.py` — runs CHECK_1–CHECK_9 and V1–V9 in code and exits non-zero on
+  any ERROR. Stdlib only; works on this kit and on any bundle generated from it. Until now
+  the kit shipped **no executable code at all** — 38 files, every one markdown — so every
+  check was an agent reading files and deciding. An agent-run check that reports PASS and a
+  check that was never run are indistinguishable afterwards, and every one of CHECK_1–CHECK_9
+  is mechanically decidable, so none of them should have depended on that distinction.
+- `tests/test_okf_check.py` — 39 tests. Each check has a bundle that fails it and a baseline
+  that passes.
+- `AGENTS.MD` §CONFORMANCE_AGENT — new mandatory first state: run the script, report its
+  output, and never hand-audit these checks and report PASS. The agent's judgment is now
+  scoped to the three things code cannot settle: whether a contested claim names the right
+  open question, whether a Coverage Ledger still matches its source document (the script
+  reads the Status column and cannot re-derive it), and whether a hand-authored deliverable
+  has drifted at record level.
+
+### Added — the Type Registry declares validity (ontology v0.3 → v0.4)
+
+- `Required Sections` and `Required Fields` columns on all three type tables, plus a
+  universal required-frontmatter list. `Typical Body Sections` is kept and stays advisory,
+  so a positional parser reading the first three columns is unaffected.
+- **V9** enforces every type's declared requirements. Registering a type with its own
+  requirements is now a table row, not a new hand-written rule — which is what stopped
+  per-type rules like `privacy-act-okf`'s V-T3a from scaling past a handful of types.
+
+### Added — rule numbering convention
+
+V1–V9 are reserved by the kit; a bundle's own rules must be named `V-<slug>`.
+Generalised from a live collision: `privacy-act-okf` uses V5/V6 for parity checks while the
+kit uses them for inference sourcing and supersession reciprocity — both ERROR in both
+places, so "V6 failed" means two unrelated things depending on which repo you are in.
+That bundle also dropped the kit's V3 while carrying 104 concepts with `confidence` and zero
+`confidence_sources`, and its own enhancements file records someone later puzzling over why
+V3 does not exist.
+
+### Fixed — found by running the checker on real bundles
+
+- Registry cells are parsed by header name, not column position, so adding a column cannot
+  silently shift meaning.
+- A `Source scope` cell may hold several globs interleaved with prose; all of them are now
+  globbed. Taking the whole cell matched nothing and reported a clean pass.
+- A contract whose scope matches no files is an ERROR — it guards nothing.
+- Tables under a `**Worked example**` marker are illustrative and are never read as live
+  registry rows.
+- A subtree with its own `ontology.md` is a separate bundle, governed by its own registry.
+- `inbox/`, `deliverables/` and `templates/` are not concept trees; `archive/` and `stubs/`
+  are and remain checked.
+- V4 exempts `archive/`, resolving a standing contradiction with §Concept Hierarchy Rules 5,
+  which puts every superseded concept — including stubs — in `archive/`.
+
+---
+
 ## [2.3.0] — 2026-07-03
 
 ### Added — new protocol (generalised from a live bundle bug)

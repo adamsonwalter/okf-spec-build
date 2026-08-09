@@ -81,6 +81,8 @@ Google spec (and why the ontology is our convention, not an OKF requirement), se
 | `archive/` | Superseded concepts (never deleted, always traceable). |
 | `playbook/` | Domain setup and operations guides — **includes `BUNDLE_COMMIT_CHECKLIST.md`**. |
 | `templates/` | Seeds for new bundles — **`log-domain-init.md`** for domain `log.md` on first clone. |
+| `scripts/` | **Executable checks.** `okf_check.py` runs CHECK_1–CHECK_9 and V1–V9 in code and exits non-zero. Shipped with the kit, so every generated bundle has it from day one. |
+| `tests/` | Tests for `scripts/`. `python3 -m unittest discover -s tests`. |
 
 ---
 
@@ -158,7 +160,23 @@ This kit produces bundles conformant with OKF v0.1 (§9):
   "Not yet checked" — every named unit in a whole-document ingestion was captured, enforced
   at ingestion time by `STATE: INVENTORY` / `GATE_5-COVERAGE`, not just audited after (CHECK_9)
 
-Run `CONFORMANCE_AGENT` at any time by telling Claude: *"validate the bundle"*.
+Run the checks yourself, in code:
+
+```bash
+python3 scripts/okf_check.py .
+```
+
+Exit `0` = conformant, `1` = at least one ERROR, `2` = unreadable. Add `--json` for
+machine-readable findings.
+
+Or tell Claude *"validate the bundle"* to run `CONFORMANCE_AGENT`, which runs the same
+script first and then reports only the few things code cannot settle — whether a
+contested claim names the right open question, whether a Coverage Ledger still matches
+its source document, and whether a hand-authored deliverable has drifted at record level.
+
+**Why a script and not just the agent.** An agent-run check that reports PASS and a check
+that was never run are indistinguishable afterwards. Every one of CHECK_1–CHECK_9 is
+mechanically decidable, so none of them should depend on that distinction.
 
 ---
 

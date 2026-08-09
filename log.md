@@ -1,5 +1,14 @@
 # Bundle Update Log
 
+## 2026-08-09
+
+* **Kit**: [scripts/okf_check.py](scripts/okf_check.py) — new. Runs CHECK_1–CHECK_9 and V1–V9 in code, exit 0/1/2, `--json` available. The kit previously shipped no executable code, so every check was agent judgment; `build_projection.py` existed only in the `privacy-act-okf` instance and never came back upstream. Verified against both this kit and that bundle.
+* **Kit**: [tests/test_okf_check.py](tests/test_okf_check.py) — new. 39 tests, one failing bundle per check plus a passing baseline.
+* **Kit**: [ontology.md](ontology.md) — v0.3 → v0.4. Type Registry gained `Required Sections` and `Required Fields` on all three type tables plus a universal required-frontmatter list; `Typical Body Sections` retained as advisory so positional parsers still work. Added V9 to enforce them, and the V1–V9 reserved / `V-<slug>` bundle-rule naming convention, generalised from the live V5/V6 collision between this kit and `privacy-act-okf`.
+* **Kit**: [AGENTS.MD](AGENTS.MD) — CONFORMANCE_AGENT must now run `scripts/okf_check.py` first and report its output, and must report NOT RUN rather than PASS if the script is missing. Its judgment is scoped to the three checks code cannot settle.
+* **Kit**: [README.md](README.md) — registered `scripts/` and `tests/`; the conformance section now leads with the command.
+* **Kit**: [CHANGELOG.md](CHANGELOG.md) — v2.4.0.
+
 ## 2026-07-03
 
 * **Kit**: [CHANGELOG.md](CHANGELOG.md) — v2.3.0: Source Coverage Contracts, generalised from the `directors-guide-ai-governance` bundle omitting four recurring content boxes despite a full sequential read.

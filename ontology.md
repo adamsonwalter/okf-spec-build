@@ -23,23 +23,45 @@ All valid values for the `type` frontmatter field in this bundle.
 Agents MUST reject or flag any concept using a `type` not listed here,
 and propose an addition via the ONTOLOGY_AGENT (see §EXTENDING).
 
+## Required frontmatter — every concept, every type
+
+These are required of any `lowercase.md` concept document regardless of type, and are
+checked by V1 and by `scripts/okf_check.py`:
+
+`type` · `title` · `description` · `timestamp` · `tags`
+
+Anything a *particular* type needs beyond this list is declared in the **Required Fields**
+column below, and anything it must contain in its body is declared in **Required Sections**.
+
+**Typical vs Required.** `Typical Body Sections` is advisory — guidance for an author, never
+checked. `Required Sections` and `Required Fields` are binding and are enforced. A type with
+both columns empty is valid with only the universal frontmatter above; that is the normal case
+for the generic core types, which are deliberately permissive.
+
+**Declare, do not legislate.** A per-type requirement belongs in these two columns, not in a
+new hand-written rule in §Validation Rules. One rule (V9) enforces all of them, so registering
+a new type with its own requirements costs a table row and no new rule. Writing `V-xyz | Every
+Legal Provision carries a Citations section` is the mistake this column exists to prevent — it
+does not scale past a handful of types, and each such rule is separately unenforced until
+someone codes it.
+
 ## Core Knowledge Types
 
-| Type | Description | Typical Body Sections |
-|---|---|---|
-| `Concept` | A discrete idea, entity, or domain term. | Schema, Examples, Citations |
-| `Playbook` | Step-by-step procedure for a known task. | Trigger, Steps, Outcome |
-| `Decision` | A recorded decision with context and rationale. | Context, Options, Chosen, Rationale |
-| `API Endpoint` | An external or internal API surface. | Schema, Authentication, Examples |
-| `Metric` | A measurable quantity with definition and source. | Formula, Source, Caveats |
-| `Reference` | A pointer to an external source or document. | Summary, Citations |
-| `Glossary Term` | A domain vocabulary definition. | Definition, Related Terms |
-| `Person` | A named individual (role-based, not PII). | Role, Expertise, Related Concepts |
-| `Organisation` | A company, team, or institution. | Description, Relationships |
-| `Event` | A time-bound occurrence. | Date, Participants, Outcome |
-| `Dataset` | A named collection of data. | Schema, Source, Access |
-| `System` | A software system, platform, or tool. | Description, API Endpoint refs |
-| `Process` | A recurring business or technical workflow. | Steps, Actors, Inputs, Outputs |
+| Type | Description | Typical Body Sections | Required Sections | Required Fields |
+|---|---|---|---|---|
+| `Concept` | A discrete idea, entity, or domain term. | Schema, Examples, Citations | — | — |
+| `Playbook` | Step-by-step procedure for a known task. | Trigger, Steps, Outcome | — | — |
+| `Decision` | A recorded decision with context and rationale. | Context, Options, Chosen, Rationale | — | — |
+| `API Endpoint` | An external or internal API surface. | Schema, Authentication, Examples | — | — |
+| `Metric` | A measurable quantity with definition and source. | Formula, Source, Caveats | — | — |
+| `Reference` | A pointer to an external source or document. | Summary, Citations | Citations | `resource` |
+| `Glossary Term` | A domain vocabulary definition. | Definition, Related Terms | — | — |
+| `Person` | A named individual (role-based, not PII). | Role, Expertise, Related Concepts | — | — |
+| `Organisation` | A company, team, or institution. | Description, Relationships | — | — |
+| `Event` | A time-bound occurrence. | Date, Participants, Outcome | — | — |
+| `Dataset` | A named collection of data. | Schema, Source, Access | — | — |
+| `System` | A software system, platform, or tool. | Description, API Endpoint refs | — | — |
+| `Process` | A recurring business or technical workflow. | Steps, Actors, Inputs, Outputs | — | — |
 
 ## Memory & Governance Types (system-managed)
 
@@ -55,21 +77,23 @@ and propose an addition via the ONTOLOGY_AGENT (see §EXTENDING).
 > confidence/memory-tier machinery and costs nothing extra for a T1 bundle to
 > use on a whole-document ingestion.
 
-| Type | Description | Created By |
-|---|---|---|
-| `Ontology` | This file. The bundle's type and relationship registry. | Human / ONTOLOGY_AGENT |
-| `Stub` | A placeholder for a known gap. Confidence 0.0. | ENRICHMENT_AGENT (gap-finder) |
-| `Inference` | A relationship or claim derived by an agent from existing concepts. | CONSUMPTION_AGENT |
-| `Agent Instruction` | An instruction file for agent behavior (ALL CAPS .md files). | Human |
-| `Loop Health Report` | Periodic diagnostic snapshot of bundle health metrics. | LOG_AGENT |
-| `Decay Report` | List of stale, isolated, or low-confidence concepts. | CONFORMANCE_AGENT |
-| `Contradiction Record` | A logged contradiction event and its resolution. | ENRICHMENT_AGENT |
-| `Coverage Ledger` | An exhaustive inventory of every named structural unit in a source document (Box/Table/Figure/callout/appendix/quote), mapped to the bundle file(s) that capture it, with a Status column (Captured / Partial / N/A / Not yet checked). Built by ENRICHMENT_AGENT's `STATE: INVENTORY` on every SOURCE-DOCUMENT MODE ingestion — the mechanical completeness gate that checks whether everything was captured, distinct from correctness checks on what *is* captured. | ENRICHMENT_AGENT (STATE: INVENTORY) |
+| Type | Description | Created By | Required Sections | Required Fields |
+|---|---|---|---|---|
+| `Ontology` | This file. The bundle's type and relationship registry. | Human / ONTOLOGY_AGENT | — | — |
+| `Stub` | A placeholder for a known gap. Confidence 0.0. | ENRICHMENT_AGENT (gap-finder) | — | — |
+| `Inference` | A relationship or claim derived by an agent from existing concepts. | CONSUMPTION_AGENT | — | `inferred_from` |
+| `Agent Instruction` | An instruction file for agent behavior (ALL CAPS .md files). | Human | — | — |
+| `Loop Health Report` | Periodic diagnostic snapshot of bundle health metrics. | LOG_AGENT | — | — |
+| `Decay Report` | List of stale, isolated, or low-confidence concepts. | CONFORMANCE_AGENT | — | — |
+| `Contradiction Record` | A logged contradiction event and its resolution. | ENRICHMENT_AGENT | — | — |
+| `Coverage Ledger` | An exhaustive inventory of every named structural unit in a source document (Box/Table/Figure/callout/appendix/quote), mapped to the bundle file(s) that capture it, with a Status column (Captured / Partial / N/A / Not yet checked). Built by ENRICHMENT_AGENT's `STATE: INVENTORY` on every SOURCE-DOCUMENT MODE ingestion — the mechanical completeness gate that checks whether everything was captured, distinct from correctness checks on what *is* captured. | ENRICHMENT_AGENT (STATE: INVENTORY) | — | — |
 
 ## Project-Specific Types
 
 > Add domain-specific types below as the bundle grows.
-> Format: `| Type | Description | Typical Body Sections |`
+> Format: `| Type | Description | Typical Body Sections | Required Sections | Required Fields |`
+> Use `—` where nothing is required. Declaring a requirement here is what makes V9 enforce it —
+> do not write a new validation rule for a per-type requirement.
 
 *(empty at bundle initialisation — add as needed)*
 
@@ -164,6 +188,30 @@ CONFORMANCE_AGENT checks these rules in addition to OKF v0.1 base conformance (�
 | V6 | No concept has `superseded_by` without a reciprocal `supersedes` in the target | ERROR |
 | V7 | Every contradiction comment `<!-- CONFLICT -->` has a corresponding LOG entry | WARNING |
 | V8 | This `ontology.md` file has `memory_tier: semantic` and `confidence: 1.0` | ERROR |
+| V9 | Every concept carries the universal required frontmatter, plus its type's `Required Fields` and `Required Sections` from §Type Registry | ERROR |
+
+## Rule numbering — kit rules and bundle rules must not collide
+
+`V1`–`V9` are **reserved by this kit**. A bundle built from the kit inherits them and must not
+renumber, redefine, or drop them.
+
+A bundle adding its own rule MUST name it `V-<slug>` — `V-coverage-parity`,
+`V-scenario-parity` — never a bare number. A bare number in a domain bundle either shadows a
+kit rule or collides with the next one the kit adds.
+
+**This is not hypothetical.** In `privacy-act-okf`, `V5` means scenario/deliverable parity and
+`V6` means source coverage parity. In this kit `V5` means every `Inference` lists what it was
+inferred from, and `V6` means no `superseded_by` without a reciprocal `supersedes`. Both are
+ERROR in both places, so "V6 failed" means two unrelated things depending on which repo you are
+standing in, and promoting either rule upstream would overwrite the other. That same bundle
+also carries `V-T3a`/`V-T3b`, which are correctly named — so the convention was understood and
+then not applied.
+
+**Dropping a kit rule is a divergence, not a preference.** `privacy-act-okf` has no `V3`, and
+104 concepts carrying `confidence` with zero `confidence_sources` — which is exactly what V3
+exists to catch. Its own enhancements file records someone later puzzling over why V3 does not
+exist. It does; it is here. Record a deliberate exclusion in §DEPRECATED TYPES or a bundle
+note, so the next reader finds a decision instead of a hole.
 
 ---
 
@@ -316,3 +364,4 @@ types in existing concept files should flag for migration, not auto-migrate.
 | 0.1 | 2026-06-19 | Initial ontology for bundle bootstrap kit |
 | 0.2 | 2026-07-03 | Added **§Deliverable Parity Contracts** — an opt-in registry for hand-authored interactive deliverables that embed a denormalized snapshot of a concept subdirectory. Generalises a bundle-specific fix (`privacy-act-okf` scenario/decision-map drift) into a reusable kit pattern. Empty template + one illustrative worked example; no live contract in this seed ontology. Paired with AGENTS.MD changes enforcing it at write time (ENRICHMENT_AGENT) and audit time (CONFORMANCE_AGENT CHECK_7). No new types/tags. |
 | 0.3 | 2026-07-03 | Added type `Coverage Ledger` (Memory & Governance Types) and tag `coverage` (System Tags), plus new **§Source Coverage Contracts** — a *different* completeness mechanism from §Deliverable Parity Contracts: that section catches concept→deliverable drift; this one catches source-document→bundle omission, which involves no deliverable at all. Generalises a bundle-specific fix (`directors-guide-ai-governance` re-ingestion silently omitting four recurring content boxes despite a full sequential read) into a reusable kit pattern. Empty template + one illustrative worked example; no live contract in this seed ontology. Paired with AGENTS.MD changes enforcing it at ingestion time (ENRICHMENT_AGENT `STATE: INVENTORY` + `GATE_5-COVERAGE`, mandatory in the new SOURCE-DOCUMENT MODE) and audit time (CONFORMANCE_AGENT CHECK_9). See CHANGELOG.md [2.3.0]. |
+| 0.4 | 2026-08-09 | Type Registry now **declares validity**, not just narrates it: added `Required Sections` and `Required Fields` columns to all three type tables, plus a universal required-frontmatter list. `Typical Body Sections` is retained and remains advisory, so any positional parser reading the first three columns is unaffected. Added **V9**, which enforces every type's declared requirements — registering a type with its own requirements is now a table row rather than a new hand-written rule, which is what stopped V-T3a-style per-type rules from scaling. Added the **rule-numbering convention**: V1–V9 are reserved by the kit, bundle rules must be `V-<slug>`. Generalised from a live collision — `privacy-act-okf` uses V5/V6 for parity checks while the kit uses them for inference sourcing and supersession reciprocity, both ERROR in both places. Paired with `scripts/okf_check.py`, which executes V1–V9 and CHECK_1–CHECK_9 in code. |

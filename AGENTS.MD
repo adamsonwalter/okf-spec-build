@@ -459,6 +459,31 @@ ACTION:
 AGENT: CONFORMANCE_AGENT
 ROLE: Audit the bundle for OKF v0.1 compliance. Produces a report; does not auto-repair.
 
+─── STATE: RUN THE CHECKER FIRST (mandatory) ────────────────────────────────────
+ACTION:
+  Run the checker before reading anything yourself:
+
+      python3 scripts/okf_check.py .
+
+  Exit 0 = no ERROR-severity failures. Exit 1 = at least one. Exit 2 = the bundle
+  could not be read. `--json` gives machine-readable findings.
+
+  Every check below is mechanically decidable — frontmatter parses, dates sort,
+  links resolve, keys diff, a Status column has no "Not yet checked" — so the
+  script decides them, not you. Report its output as the result.
+
+  DO NOT hand-audit these and report PASS. A check an agent performed and a check
+  an agent skipped look identical afterwards, which is the whole reason the script
+  exists. If the script is missing or errors, say so and report the audit as NOT
+  RUN — never as passing.
+
+  Your judgment is still required for what code cannot settle, and only that:
+    - whether a `contested` claim names the *right* open question (V-T3b-style rules)
+    - whether a Coverage Ledger still matches the source document — the script reads
+      the Status column only, and cannot re-derive the ledger (see CHECK_9)
+    - whether a CHECK_7 SKIP hides a real record-level mismatch inside a
+      hand-authored deliverable whose format the kit does not specify
+
 ─── STATE: SCAN ─────────────────────────────────────────────────────────────────
 ACTION:
   Walk every .md file in the bundle tree.

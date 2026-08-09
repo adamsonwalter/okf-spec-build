@@ -397,6 +397,33 @@ class TestShowYourWorking(BundleFixture):
         self.assertIn("a-thing.md", flagged)
 
 
+class TestStubsAreNotClaims(BundleFixture):
+    """A Stub's confidence 0.0 means nothing asserted yet, not asserted weakly."""
+
+    def test_stub_is_exempt_from_v3(self):
+        self.write("stubs/gap.md", CONCEPT.replace(
+            "type: Concept", "type: Stub").replace(
+            "tags: [system]", "tags: [system]\nconfidence: 0.0"))
+        flagged = [f.path for f in self.run_checks() if f.check == "V3"]
+        self.assertNotIn(os.path.join("stubs", "gap.md"), flagged)
+
+    def test_stub_is_exempt_from_v12(self):
+        self.write("ontology.md", ONTOLOGY.replace(
+            "| Tag | Meaning |\n|---|---|\n| `system` | Infrastructure |",
+            "| Tag | Meaning | Certainty band |\n|---|---|---|\n"
+            "| `system` | Infrastructure | |\n| `contested` | Open | 0.60 - 0.90 |"))
+        self.write("stubs/gap.md", CONCEPT.replace(
+            "type: Concept", "type: Stub").replace(
+            "tags: [system]", "tags: [system, contested]\nconfidence: 0.0"))
+        self.assertNotIn("V12", self.codes())
+
+    def test_a_real_concept_at_the_same_confidence_is_still_checked(self):
+        self.write("a-thing.md", CONCEPT.replace(
+            "tags: [system]", "tags: [system]\nconfidence: 0.0"))
+        flagged = [f.path for f in self.run_checks() if f.check == "V3"]
+        self.assertIn("a-thing.md", flagged)
+
+
 class TestSupersession(BundleFixture):
     def test_one_sided_supersession_fails(self):
         self.write("old.md", CONCEPT.replace(

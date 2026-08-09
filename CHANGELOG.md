@@ -8,6 +8,21 @@ Format: [Semantic Versioning](https://semver.org) — MAJOR.MINOR.PATCH
 
 ---
 
+## [2.6.1] — 2026-08-09
+
+### Fixed — a Stub is a placeholder, not a claim
+
+`type: Stub` is now exempt from V3 (show your working) and V12 (confidence sits in its band).
+A stub's `confidence: 0.0` means *nothing asserted yet*, not *asserted weakly*, so neither
+rule has anything to check. Found by running v2.6.0 against the reference bundle, where a
+`contested` stub at 0.0 was reported as outside the 0.60–0.90 band — a correct reading of the
+rule and the wrong question to ask of a placeholder. It also accounted for 10 of the 11
+remaining V3 warnings there, all archived stubs.
+
+A non-stub concept at the same confidence is still checked.
+
+---
+
 ## [2.6.0] — 2026-08-09
 
 ### Added — certainty is checkable without the kit imposing a vocabulary (ontology v0.6 → v0.7)

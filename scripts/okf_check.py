@@ -392,7 +392,12 @@ def _check_types_and_fields(bundle, registries, concepts, findings):
         # so the rule was wrong for judgment-based bundles and got dropped
         # rather than argued with. Presence, not truth: 'confidence_sources: 0'
         # is a declared zero, correct for a Stub at confidence 0.0.
-        if front.get("confidence") is not None:
+        # A Stub is a placeholder, not a claim. Its confidence 0.0 means "nothing
+        # asserted yet", not "asserted weakly", so neither showing working (V3)
+        # nor sitting inside a certainty band (V12) applies to it.
+        is_stub = concept_type == "Stub"
+
+        if front.get("confidence") is not None and not is_stub:
             has_sources = front.get("confidence_sources") is not None
             has_citations = any(h.strip().lower().startswith("citations")
                                 for h in HEADING.findall(body))
@@ -406,7 +411,7 @@ def _check_types_and_fields(bundle, registries, concepts, findings):
         # design: certainty is a judgment and a band is a sanity check on it,
         # not an authority over it.
         confidence = front.get("confidence")
-        if confidence is not None:
+        if confidence is not None and not is_stub:
             for tag in front.get("tags") or []:
                 band = registries["bands"].get(tag)
                 if not band:

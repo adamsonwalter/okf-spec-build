@@ -6,7 +6,8 @@
 * **Kit**: [scripts/okf_check.py](scripts/okf_check.py) — implements the rewritten V3 and new V12; an unreadable band is an ERROR, never silence, so a typo cannot switch the check off. **Fixed CHECK_5**: links inside fenced code blocks are examples, not links. Adding a worked example to `ontology.md` immediately produced three false positives against the kit itself. `okf_graph.py` had the same exposure and is fixed with it.
 * **Kit**: [AGENTS.MD](AGENTS.MD) — CONFORMANCE_AGENT now lists V9–V12 and the `okf_graph.py` command, and is told explicitly not to resolve a V12 warning by re-grading a concept to fit a band. A band half the corpus breaches is the thing that is wrong; re-grading to satisfy it hides material rather than correcting it.
 * **Kit**: [tests/test_okf_check.py](tests/test_okf_check.py) — 12 more tests covering band parsing, V12 severity, and the three V3 outcomes. 70 across the kit.
-* **Kit**: [CHANGELOG.md](CHANGELOG.md) — v2.6.0.
+* **Kit**: [scripts/okf_check.py](scripts/okf_check.py) — `type: Stub` exempted from V3 and V12. A stub's `confidence: 0.0` means nothing asserted yet, not asserted weakly, so neither showing working nor sitting inside a certainty band applies. Found by running v2.6.0 against the reference bundle, where a `contested` stub at 0.0 read as outside its band — a correct reading of the rule and the wrong question to ask of a placeholder. Three tests; 73 across the kit.
+* **Kit**: [CHANGELOG.md](CHANGELOG.md) — v2.6.0, then v2.6.1 for the stub exemption.
 
 ## 2026-08-09
 

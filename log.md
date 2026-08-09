@@ -2,6 +2,16 @@
 
 ## 2026-08-09
 
+* **Kit**: [scripts/okf_graph.py](scripts/okf_graph.py) — new. Extracts typed edges from every `# Related` section; 384 edges across 101 concepts in the reference bundle, every target resolving. Parses a bold marker from the closed ten-item taxonomy, not prose — measured, 323 of 332 bullets already carry the marker and none relies on an unmarked English verb, so the standing caution against prose parsing does not apply. Joins wrapped continuation lines before matching, worth 18 edges alone.
+* **Kit**: [scripts/okf_check.py](scripts/okf_check.py) — added V10 (every edge target resolves to a concept) and V11 (no edge points into an archived or superseded concept), both ERROR. V11 is the decay guard V6 could only half-cover. The graph module is imported lazily and its absence is reported as SKIP, never as a pass.
+* **Kit**: [tests/test_okf_graph.py](tests/test_okf_graph.py) — new, 18 tests. 58 across the kit.
+* **Kit**: [ontology.md](ontology.md) — v0.5 → v0.6. New §Writing a relationship so it can be traversed, and the decision that **relationships are directional with no registered inverses**: `referenced-by`, `depended-on-by`, `superseded` fail the build; put the edge on the other concept. Keeps the vocabulary closed at ten, which is what makes an unregistered relationship detectable.
+* **Update**: [stubs/relationship-graph-extraction.md](stubs/relationship-graph-extraction.md) — its own `# Related` bullets rewritten to use the bold marker the new section requires. They used backticks and produced no edges, which the zero-edge guard caught on the kit itself.
+* **Kit**: [docs/PLAN_GRAPH_AND_CERTAINTY.md](docs/PLAN_GRAPH_AND_CERTAINTY.md) — Part A marked done; inverse-form count corrected from four to six, the first figure having been read off a sample rather than counted.
+* **Kit**: [README.md](README.md), [CHANGELOG.md](CHANGELOG.md) — v2.5.0.
+
+## 2026-08-09
+
 * **Kit**: [scripts/okf_check.py](scripts/okf_check.py) — new. Runs CHECK_1–CHECK_9 and V1–V9 in code, exit 0/1/2, `--json` available. The kit previously shipped no executable code, so every check was agent judgment; `build_projection.py` existed only in the `privacy-act-okf` instance and never came back upstream. Verified against both this kit and that bundle.
 * **Kit**: [tests/test_okf_check.py](tests/test_okf_check.py) — new. 39 tests, one failing bundle per check plus a passing baseline.
 * **Kit**: [ontology.md](ontology.md) — v0.3 → v0.4. Type Registry gained `Required Sections` and `Required Fields` on all three type tables plus a universal required-frontmatter list; `Typical Body Sections` retained as advisory so positional parsers still work. Added V9 to enforce them, and the V1–V9 reserved / `V-<slug>` bundle-rule naming convention, generalised from the live V5/V6 collision between this kit and `privacy-act-okf`.

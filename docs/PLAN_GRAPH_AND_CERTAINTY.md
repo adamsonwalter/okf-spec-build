@@ -74,6 +74,13 @@ exclusive would break working practice. The stub is corrected accordingly.
 
 ---
 
+## Part A — Make relationships traversable  ·  **DONE, 9 August 2026**
+
+> Shipped in kit v2.5.0. Decision taken: **directional only, inverses unregistered.**
+> `scripts/okf_graph.py` extracts **384 edges across 101 concepts** from the reference
+> bundle, every target resolving. V10 and V11 run from `okf_check.py`. 18 graph tests.
+> The counts below were the plan's estimates; the measured results are in the CHANGELOG.
+
 ## Part A — Make relationships traversable
 
 Lowest risk of the two, highest immediate value, and the measurements say it is close to
@@ -86,7 +93,7 @@ telling us the taxonomy is short:
 
 | Class | Count | Example | What it means |
 |---|---|---|---|
-| **Unregistered inverse forms** | 4 | `**referenced-by**` ×3, `**superseded**` ×1 | Authors need to say a relationship *backwards* and the taxonomy has no way to |
+| **Unregistered inverse forms** | 6 | `**referenced-by**` ×5, `**superseded**` ×1 | Authors need to say a relationship *backwards* and the taxonomy has no way to |
 | **Bullet truncated at a section boundary** | 2 | line ends `— ` with nothing after | Wrapping/authoring artefact |
 | **Genuine cross-reference, no relationship** | 3 | "…sits outside this ladder — see [x]" | Not a typed edge at all |
 
@@ -236,7 +243,7 @@ That would close the V3 divergence honestly rather than by exemption.
 | B3 V12 as WARNING | 0.5 d | B2 |
 | B4 revisit V3 | 0.5 d | B1.2 |
 
-**Do Part A first**, entirely. It is nearly mechanical, the corpus is already 97% conformant,
+**Part A is done.** It was It is nearly mechanical, the corpus is already 97% conformant,
 and it delivers the decay guards that matter most in a legal bundle. Part B cannot start until
 the three questions in B1 are answered, and answering them badly is worse than leaving the gap
 open — which is why v2.4.0 left it open.

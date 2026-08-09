@@ -74,7 +74,5 @@ format is the kit's own and the vocabulary is closed.
 
 ## Related
 
-- `depends-on` [ontology.md](../ontology.md) §Relationship Taxonomy — the closed vocabulary
-  that makes extraction decidable.
-- `related-to` [certainty-vocabulary-reconciliation](certainty-vocabulary-reconciliation.md)
-  — the other declared-but-unused structure in the same ontology.
+- The closed vocabulary that makes extraction decidable is [ontology.md](../ontology.md) — **depends-on**.
+- The other structure declared in the same ontology and used by nothing is [certainty vocabulary reconciliation](certainty-vocabulary-reconciliation.md) — **related-to**.

@@ -268,7 +268,34 @@ def run_checks(bundle):
     _check_supersession(bundle, concepts, findings)
     _check_coverage_contracts(bundle, registries, findings)
     _check_deliverable_contracts(bundle, registries, findings)
+    _check_relationship_graph(bundle, concepts, findings)
     return findings, registries
+
+
+def _check_relationship_graph(bundle, concepts, findings):
+    """V10 / V11 — the typed edges in every `# Related` section.
+
+    Imported lazily so okf_check.py still runs if okf_graph.py is absent, but
+    a missing extractor is reported rather than passed over: a graph check that
+    did not run must not read as a graph check that passed.
+    """
+    try:
+        import okf_graph
+    except ImportError as exc:
+        findings.append(Finding(SKIP, "V10/V11", None,
+                                f"relationship graph not checked — okf_graph.py "
+                                f"unavailable ({exc})"))
+        return
+
+    edges, graph_findings = okf_graph.extract_edges(bundle)
+    findings.extend(graph_findings)
+
+    concept_paths = {rel for _, rel, _, _, _ in concepts}
+    dead = set()
+    for _, rel, front, _, _ in concepts:
+        if rel.replace(os.sep, "/").startswith("archive/") or front.get("superseded_by"):
+            dead.add(rel)
+    findings.extend(okf_graph.check_graph(bundle, edges, concept_paths, dead))
 
 
 def _check_types_and_fields(bundle, registries, concepts, findings):

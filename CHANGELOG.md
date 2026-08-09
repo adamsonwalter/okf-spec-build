@@ -8,6 +8,50 @@ Format: [Semantic Versioning](https://semver.org) — MAJOR.MINOR.PATCH
 
 ---
 
+## [2.5.0] — 2026-08-09
+
+### Added — relationships are traversable (Part A of docs/PLAN_GRAPH_AND_CERTAINTY.md)
+
+The ten-relationship taxonomy has been declared since v0.1 and read by nothing, so a bundle
+was a list of concepts with prose between them rather than a graph.
+
+- `scripts/okf_graph.py` — extracts typed edges from every `# Related` section. Against the
+  reference bundle: **384 edges across 101 concepts, every target resolving.**
+- `scripts/okf_check.py` — **V10** (every edge target resolves to a concept) and **V11** (no
+  edge points into an archived or superseded concept), both ERROR. V11 is the decay guard:
+  a superseded concept still cited in prose reads exactly like a live one, and V6 only ever
+  guarded the frontmatter half.
+- `tests/test_okf_graph.py` — 18 tests. 58 across the kit.
+
+**Measurement decided the design, not the spec.** 104/104 concepts carry a `# Related`
+section; 323 of 332 bullets carry a bold `**relationship**` marker; **none** relies on
+inferring a relationship from an English verb. So this parses a marker from a closed
+vocabulary in the kit's own format, not prose — the standing caution against prose parsing
+does not apply here. Joining wrapped continuation lines is worth 18 edges on its own, so the
+extractor joins before matching rather than treating wrapping as an edge case.
+
+### Added — ontology v0.6, §Writing a relationship so it can be traversed
+
+A `# Related` bullet is an edge. One bullet carries one relationship and any number of links;
+each link becomes an edge. A bullet with links and no marker is a plain cross-reference,
+allowed, producing no edge, and counted so the number stays visible.
+
+**Relationships are directional and inverses are not registered.** `referenced-by`,
+`depended-on-by` and `superseded` fail the build; put the edge on the other concept instead.
+This keeps the vocabulary closed at ten, which is what makes an unregistered relationship
+*detectable* rather than merely unexpected, and matches the reciprocal pattern V6 already
+enforces in frontmatter. Measured: six bullets in the reference bundle reach for an inverse —
+six authors reaching for the nearest word, not evidence of a missing capability.
+
+### Design note — the zero-edge guard has a principled trigger, not a threshold
+
+An extraction yielding nothing is indistinguishable from a bundle with no relationships. But
+failing a freshly cloned seed bundle would get the check switched off, so the trigger is: zero
+edges **while linked `# Related` bullets exist** is an ERROR; zero edges with no linked bullets
+is a SKIP. No magic number.
+
+---
+
 ## [2.4.1] — 2026-08-09
 
 Housekeeping for v2.4.0: three behaviours were implemented in code and documented nowhere

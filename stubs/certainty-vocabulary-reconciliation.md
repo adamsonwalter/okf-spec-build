@@ -79,6 +79,5 @@ inconveniences, which is what happened to V3.
 
 ## Related
 
-- `depends-on` [ontology.md](../ontology.md) §Tag Taxonomy — where the declaration would sit.
-- `related-to` [relationship-graph-extraction](relationship-graph-extraction.md) — the other
-  structure declared in the ontology and used by nothing.
+- The registry where a certainty band would be declared is [ontology.md](../ontology.md) — **depends-on**.
+- The other declared-but-unused structure is [relationship graph extraction](relationship-graph-extraction.md) — **related-to**.

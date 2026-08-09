@@ -120,6 +120,46 @@ The label does NOT appear in the markdown link syntax — it appears as natural 
 | `authored-by` | A → B | "authored by", "written by", "maintained by" | Playbook authored by Person |
 | `governs` | A → B | "governs", "constrains", "regulates" | Ontology governs all Concepts |
 
+## Writing a relationship so it can be traversed
+
+A `# Related` bullet is an **edge**, not a sentence. `scripts/okf_graph.py` extracts these,
+so the form below is load-bearing.
+
+**Mark the relationship in bold, from the ten above.** Write `**depends-on**`, not the word
+"depends" in a sentence. Measured across a 104-concept bundle, 323 of 332 bullets already do
+this and none relies on an unmarked English verb — the marker is the convention in practice
+and is now the convention in writing.
+
+```markdown
+- Anchored by the [POLA Act 2024](../framework/pola-act-2024.md) — **depends-on**.
+- Key milestones: [Issues Paper](a.md), [GenAI guidance](b.md) — **references**.
+```
+
+One bullet carries **one** relationship and any number of links; each link becomes an edge.
+
+**A bullet may wrap.** The extractor joins continuation lines before matching, so a marker on
+the following line is still found.
+
+**A bullet with links and no marker is a plain cross-reference.** That is allowed and produces
+no edge. It warns, so the count stays visible.
+
+### Relationships are directional — do not write the inverse
+
+The taxonomy is **ten directional relationships and no inverses**. `**referenced-by**`,
+`**depended-on-by**` and `**superseded**` are not registered and fail the build.
+
+To say a thing backwards, put the edge on the other concept: if B is referenced by A, the
+`**references**` bullet belongs in A, pointing at B. A consumer reads an edge in either
+direction, so the inverse carries no information the forward edge does not.
+
+This matches the reciprocal pattern V6 already enforces for `superseded_by` / `supersedes` in
+frontmatter, and keeps the vocabulary closed at ten — which is what makes an unregistered
+relationship *detectable* rather than merely unexpected.
+
+*(Measured: six bullets in the reference bundle reach for an inverse — five `referenced-by`
+and one `superseded`. Six authors reaching for the nearest word, not evidence of a missing
+capability.)*
+
 ---
 
 # Tag Taxonomy
@@ -391,3 +431,4 @@ types in existing concept files should flag for migration, not auto-migrate.
 | 0.3 | 2026-07-03 | Added type `Coverage Ledger` (Memory & Governance Types) and tag `coverage` (System Tags), plus new **§Source Coverage Contracts** — a *different* completeness mechanism from §Deliverable Parity Contracts: that section catches concept→deliverable drift; this one catches source-document→bundle omission, which involves no deliverable at all. Generalises a bundle-specific fix (`directors-guide-ai-governance` re-ingestion silently omitting four recurring content boxes despite a full sequential read) into a reusable kit pattern. Empty template + one illustrative worked example; no live contract in this seed ontology. Paired with AGENTS.MD changes enforcing it at ingestion time (ENRICHMENT_AGENT `STATE: INVENTORY` + `GATE_5-COVERAGE`, mandatory in the new SOURCE-DOCUMENT MODE) and audit time (CONFORMANCE_AGENT CHECK_9). See CHANGELOG.md [2.3.0]. |
 | 0.4 | 2026-08-09 | Type Registry now **declares validity**, not just narrates it: added `Required Sections` and `Required Fields` columns to all three type tables, plus a universal required-frontmatter list. `Typical Body Sections` is retained and remains advisory, so any positional parser reading the first three columns is unaffected. Added **V9**, which enforces every type's declared requirements — registering a type with its own requirements is now a table row rather than a new hand-written rule, which is what stopped V-T3a-style per-type rules from scaling. Added the **rule-numbering convention**: V1–V9 are reserved by the kit, bundle rules must be `V-<slug>`. Generalised from a live collision — `privacy-act-okf` uses V5/V6 for parity checks while the kit uses them for inference sourcing and supersession reciprocity, both ERROR in both places. Paired with `scripts/okf_check.py`, which executes V1–V9 and CHECK_1–CHECK_9 in code. |
 | 0.5 | 2026-08-09 | Wrote down the conventions the checker already enforces, so the spec and the code agree. V4 now carries its `archive/` exemption in the rule text — it previously contradicted §Concept Hierarchy Rules 5 outright for an archived stub, and only `okf_check.py` knew the resolution. Added §Conventions the checker depends on: the `**Worked example**` marker that keeps an illustration out of the live contract registries, the rule that a subtree with its own `ontology.md` is a separate bundle governed by its own registry, and the list of directories that are not concept trees. Each was implemented in code in v2.4.0 and documented nowhere an author would look. |
+| 0.6 | 2026-08-09 | Relationships become traversable. Added §Writing a relationship so it can be traversed: a `# Related` bullet is an edge, the relationship is marked in bold from the closed ten, one bullet carries one relationship and any number of links, wrapped bullets are joined, and a bullet with links but no marker is an allowed cross-reference that produces no edge. **Relationships are directional and inverses are not registered** — `referenced-by`, `depended-on-by`, `superseded` fail the build; put the edge on the other concept instead. Keeps the vocabulary closed at ten, which is what makes an unregistered relationship detectable. Added V10 (every edge target resolves to a concept) and V11 (no edge points into an archived or superseded concept), both ERROR — V11 is the decay guard, since a superseded concept still cited in prose reads exactly like a live one and V6 only guards the frontmatter half. |

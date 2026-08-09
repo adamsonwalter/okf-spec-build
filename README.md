@@ -81,7 +81,7 @@ Google spec (and why the ontology is our convention, not an OKF requirement), se
 | `archive/` | Superseded concepts (never deleted, always traceable). |
 | `playbook/` | Domain setup and operations guides — **includes `BUNDLE_COMMIT_CHECKLIST.md`**. |
 | `templates/` | Seeds for new bundles — **`log-domain-init.md`** for domain `log.md` on first clone. |
-| `scripts/` | **Executable checks.** `okf_check.py` runs CHECK_1–CHECK_9 and V1–V9 in code and exits non-zero. Shipped with the kit, so every generated bundle has it from day one. |
+| `scripts/` | **Executable checks.** `okf_check.py` runs CHECK_1–CHECK_9 and V1–V11 in code and exits non-zero; `okf_graph.py` extracts the typed relationship graph from `# Related` sections. Shipped with the kit, so every generated bundle has both from day one. |
 | `tests/` | Tests for `scripts/`. `python3 -m unittest discover -s tests`. |
 
 ---
@@ -164,6 +164,12 @@ Run the checks yourself, in code:
 
 ```bash
 python3 scripts/okf_check.py .
+```
+
+Dump the relationship graph on its own — edge counts by type, or JSON for an application:
+
+```bash
+python3 scripts/okf_graph.py . --json
 ```
 
 Exit `0` = conformant, `1` = at least one ERROR, `2` = unreadable. Add `--json` for

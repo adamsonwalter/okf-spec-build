@@ -8,6 +8,43 @@ Format: [Semantic Versioning](https://semver.org) — MAJOR.MINOR.PATCH
 
 ---
 
+## [2.4.1] — 2026-08-09
+
+Housekeeping for v2.4.0: three behaviours were implemented in code and documented nowhere
+an author would look, and one fix never reached this file. A convention that lives only in
+the checker is the same defect the checker exists to remove, one level up.
+
+### Fixed
+
+- `scripts/okf_check.py` — V3 tests `confidence_sources` for **presence, not truth**.
+  `confidence_sources: 0` is a declared zero and correct for a `Stub` at confidence 0.0;
+  treating it as absent flagged every properly-formed stub, including the kit's own
+  `trigger-c-scheduler`. Found by writing two new stubs against the existing one. Test added.
+
+### Documented — the spec now says what the code already does (ontology v0.4 → v0.5)
+
+- **V4 carries its exemption.** The rule read "every `type: Stub` concept is in the `stubs/`
+  subdirectory", which contradicts §Concept Hierarchy Rules 5 outright for an archived stub —
+  rule 5 puts every superseded concept in `archive/`. The checker resolved it in favour of
+  `archive/` and the ontology still stated both. The exemption is now in the rule text.
+- **New §Conventions the checker depends on**, holding the two load-bearing markers:
+  - `**Worked example**` keeps an illustration out of the live contract registries. It must
+    be written exactly — `**Example**` or a plain sentence causes the checker to read the
+    illustration as a registered contract.
+  - a subtree with its own `ontology.md` is a separate bundle, governed by its own registry.
+    `ontology-mapper/pattern-library/` is the working example.
+  - `inbox/`, `deliverables/` and `templates/` are not concept trees; `archive/` and `stubs/`
+    are.
+
+### Recorded — open gaps, not fixes
+
+- `stubs/relationship-graph-extraction.md` — the ten-relationship taxonomy is declared and
+  nothing extracts it, so `supersedes` and `derived-from` decay undetected.
+- `stubs/certainty-vocabulary-reconciliation.md` — a numeric `confidence` and a certainty tag
+  can disagree with nothing relating them.
+
+---
+
 ## [2.4.0] — 2026-08-09
 
 ### Added — the kit now ships executable checks

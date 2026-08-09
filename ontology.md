@@ -183,12 +183,37 @@ CONFORMANCE_AGENT checks these rules in addition to OKF v0.1 base conformance (�
 | V1 | Every concept's `type` is registered in this Ontology | ERROR |
 | V2 | Every concept's `tags` are registered in this Ontology | WARNING |
 | V3 | No concept has `confidence` without `confidence_sources` | WARNING |
-| V4 | Every `type: Stub` concept is in the `stubs/` subdirectory | WARNING |
+| V4 | Every `type: Stub` concept is in the `stubs/` subdirectory, **except** an archived stub, which lives in `archive/` per §Concept Hierarchy Rules 5 | WARNING |
 | V5 | Every `type: Inference` has `inferred_from` listing at least one source | ERROR |
 | V6 | No concept has `superseded_by` without a reciprocal `supersedes` in the target | ERROR |
 | V7 | Every contradiction comment `<!-- CONFLICT -->` has a corresponding LOG entry | WARNING |
 | V8 | This `ontology.md` file has `memory_tier: semantic` and `confidence: 1.0` | ERROR |
 | V9 | Every concept carries the universal required frontmatter, plus its type's `Required Fields` and `Required Sections` from §Type Registry | ERROR |
+
+## Conventions the checker depends on
+
+`scripts/okf_check.py` reads this file. The conventions below are **load-bearing**: change
+the wording and the checker's behaviour changes with it. They are declared here rather than
+left as prose an agent infers, because that inference is precisely what code cannot do.
+
+**`**Worked example**` marks an illustration.** In §Deliverable Parity Contracts and
+§Source Coverage Contracts, a table following a line that begins `**Worked example**` is
+never read as a live contract. The marker runs until the next heading.
+
+Write it exactly. `**Example**`, `**Illustration**` or a plain sentence will cause the
+checker to treat the illustration as a registered contract and fail the build against files
+that were never meant to exist.
+
+**A subtree with its own `ontology.md` is a separate bundle.** It is governed by that
+registry, not this one, and the checker walks it as its own bundle rather than judging its
+concepts against the parent. `ontology-mapper/pattern-library/` is the working example — its
+`type: Pattern` concepts are valid there and unregistered here, and both statements are
+correct. Check one by pointing at it: `python3 scripts/okf_check.py <dir>`.
+
+**Not concept trees.** `inbox/` holds raw source documents awaiting ingestion,
+`deliverables/` holds hand-authored artifacts, and `templates/` holds seeds for reserved
+files. None carries concept frontmatter and none is checked. `archive/` and `stubs/` do hold
+concepts and are checked.
 
 ## Rule numbering — kit rules and bundle rules must not collide
 
@@ -365,3 +390,4 @@ types in existing concept files should flag for migration, not auto-migrate.
 | 0.2 | 2026-07-03 | Added **§Deliverable Parity Contracts** — an opt-in registry for hand-authored interactive deliverables that embed a denormalized snapshot of a concept subdirectory. Generalises a bundle-specific fix (`privacy-act-okf` scenario/decision-map drift) into a reusable kit pattern. Empty template + one illustrative worked example; no live contract in this seed ontology. Paired with AGENTS.MD changes enforcing it at write time (ENRICHMENT_AGENT) and audit time (CONFORMANCE_AGENT CHECK_7). No new types/tags. |
 | 0.3 | 2026-07-03 | Added type `Coverage Ledger` (Memory & Governance Types) and tag `coverage` (System Tags), plus new **§Source Coverage Contracts** — a *different* completeness mechanism from §Deliverable Parity Contracts: that section catches concept→deliverable drift; this one catches source-document→bundle omission, which involves no deliverable at all. Generalises a bundle-specific fix (`directors-guide-ai-governance` re-ingestion silently omitting four recurring content boxes despite a full sequential read) into a reusable kit pattern. Empty template + one illustrative worked example; no live contract in this seed ontology. Paired with AGENTS.MD changes enforcing it at ingestion time (ENRICHMENT_AGENT `STATE: INVENTORY` + `GATE_5-COVERAGE`, mandatory in the new SOURCE-DOCUMENT MODE) and audit time (CONFORMANCE_AGENT CHECK_9). See CHANGELOG.md [2.3.0]. |
 | 0.4 | 2026-08-09 | Type Registry now **declares validity**, not just narrates it: added `Required Sections` and `Required Fields` columns to all three type tables, plus a universal required-frontmatter list. `Typical Body Sections` is retained and remains advisory, so any positional parser reading the first three columns is unaffected. Added **V9**, which enforces every type's declared requirements — registering a type with its own requirements is now a table row rather than a new hand-written rule, which is what stopped V-T3a-style per-type rules from scaling. Added the **rule-numbering convention**: V1–V9 are reserved by the kit, bundle rules must be `V-<slug>`. Generalised from a live collision — `privacy-act-okf` uses V5/V6 for parity checks while the kit uses them for inference sourcing and supersession reciprocity, both ERROR in both places. Paired with `scripts/okf_check.py`, which executes V1–V9 and CHECK_1–CHECK_9 in code. |
+| 0.5 | 2026-08-09 | Wrote down the conventions the checker already enforces, so the spec and the code agree. V4 now carries its `archive/` exemption in the rule text — it previously contradicted §Concept Hierarchy Rules 5 outright for an archived stub, and only `okf_check.py` knew the resolution. Added §Conventions the checker depends on: the `**Worked example**` marker that keeps an illustration out of the live contract registries, the rule that a subtree with its own `ontology.md` is a separate bundle governed by its own registry, and the list of directories that are not concept trees. Each was implemented in code in v2.4.0 and documented nowhere an author would look. |

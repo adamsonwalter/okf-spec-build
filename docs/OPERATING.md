@@ -83,16 +83,30 @@ It prints the kit version before and after, rebuilds projections, and re-runs th
 
 ## Starting a new bundle
 
-```
-mkdir new-bundle && cd new-bundle && git init
-git submodule add https://github.com/adamsonwalter/okf-spec-build.git okf-kit
-cp okf-kit/templates/log-domain-init.md log.md      # set your domain and date
-cp okf-kit/ontology.md ontology.md                  # then cut it down to your domain
-cp okf-kit/.github/workflows/bundle-conformance.yml .github/workflows/conformance.yml
+One command, run from the kit:
+
+```bash
+python3 scripts/okf_new_bundle.py ../my-new-corpus --title "My New Corpus"
 ```
 
-Copy `check.command` and `update-kit.command` from an existing bundle. Then declare
-`# Projection` and `# Authority Posture` in your `ontology.md` — everything else has defaults.
+It creates a **separate repo** — the kit never holds knowledge — with the kit attached as a
+pinned submodule, a domain-only `ontology.md`, `log.md`, `index.md`, `README.md`, `inbox/`,
+both `.command` wrappers and CI. It then runs the checker before exiting, so the bundle is
+conformant at birth rather than at first use.
+
+Then:
+
+1. `cd` into it and declare **`# Authority Posture`** in `ontology.md` — what this bundle is
+   the authority for, and what it only carries as context.
+2. Put source material in `inbox/` and ask an agent to ingest it.
+3. `./check.command`, then commit and push.
+
+**Do not copy anything from `okf-kit/ontology.md` into the new bundle.** The type registry,
+the relationship taxonomy and rules V1–V13 are **inherited**. A bundle declares domain
+additions only, so there is no copy for a rule to go missing from — which is exactly how V3
+was lost once.
+
+A bundle's own rules must be named `V-<slug>`, never a bare number.
 
 ---
 

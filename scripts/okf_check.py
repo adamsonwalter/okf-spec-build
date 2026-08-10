@@ -227,7 +227,21 @@ def load_registries(bundle, findings):
                                 "no ontology.md — nothing defines what a valid concept is"))
         return registries
 
-    tables = parse_tables(bundle.read(bundle.ontology_path))
+    # A bundle inherits the kit's registries rather than copying them. A copy
+    # drifts: privacy-act-okf held a copy of V1-V4 and V3 went missing from it,
+    # and nobody noticed because nothing compared the two. Inheriting means a
+    # bundle has no copy to drop a rule from.
+    sources = []
+    kit_ontology = os.path.join(bundle.root, "okf-kit", "ontology.md")
+    if os.path.exists(kit_ontology):
+        sources.append(bundle.read(kit_ontology))
+    sources.append(bundle.read(bundle.ontology_path))
+
+    tables = {}
+    for text in sources:
+        for heading, rows in parse_tables(text).items():
+            tables.setdefault(heading, []).extend(rows)
+
     for heading, rows in tables.items():
         low = heading.lower()
         for row in rows:

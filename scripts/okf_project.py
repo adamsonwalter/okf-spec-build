@@ -161,16 +161,36 @@ def parse_tags(raw: str) -> list:
     return [raw] if raw else []
 
 
+def nested_bundle_dirs(root: Path) -> set:
+    """Subtrees carrying their own ontology.md — separate bundles, not content.
+
+    Without this the kit submodule at okf-kit/ is projected as if its stubs and
+    ontology were this bundle's concepts. A 4-file bundle reported 25.
+    """
+    nested = set()
+    for path in root.rglob("ontology.md"):
+        if path.parent != root:
+            nested.add(path.parent)
+    return nested
+
+
 def collect_concept_files(root: Path) -> list:
     files = []
+    nested = nested_bundle_dirs(root)
     for path in sorted(root.rglob("*.md")):
         rel = path.relative_to(root)
         if any(part in EXCLUDE_DIRS for part in rel.parts):
             continue
+        if any(nest in path.parents for nest in nested):
+            continue
         if path.name in EXCLUDE_FILES or path.name in RESERVED_NAMES:
             continue
-        if path.name.isupper():
-            continue                        # ALL CAPS = agent instructions
+        # ALL CAPS = agent instructions, per README.md's naming rule. Test the
+        # stem: "README.md".isupper() is False because of the extension, which
+        # silently projected README.md as a concept.
+        stem = path.stem
+        if stem.upper() == stem and any(c.isalpha() for c in stem):
+            continue
         files.append(path)
     return files
 
@@ -268,6 +288,20 @@ def parse_confidence(value):
         return float(value)
     except (TypeError, ValueError):
         return None
+
+
+def read_ontology_sources(root: Path) -> str:
+    """The bundle's ontology, with the kit's prepended when present.
+
+    A bundle inherits the kit's registries rather than copying them — a copy
+    drifts, and the drift is invisible because nothing compares the two.
+    """
+    texts = []
+    kit = root / "okf-kit" / "ontology.md"
+    if kit.exists():
+        texts.append(kit.read_text(encoding="utf-8"))
+    texts.append((root / "ontology.md").read_text(encoding="utf-8"))
+    return "\n\n".join(texts)
 
 
 def parse_ontology(text: str) -> dict:
@@ -463,7 +497,8 @@ def main(argv=None):
         print(f"Wrote {out} ({count} concepts)")
 
     structured = build_structured(root, config, entries, "master (all concepts)",
-                                  generated, log_head, parse_ontology(ontology_text))
+                                  generated, log_head,
+                                  parse_ontology(read_ontology_sources(root)))
     out = projections / f"{config['slug']}-master.json"
     out.write_text(json.dumps(structured, indent=2, ensure_ascii=False) + "\n",
                    encoding="utf-8")

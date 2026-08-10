@@ -112,7 +112,17 @@ Full instructions, including what happens if you forget to push or pull: **`docs
 
 ## Quick Start
 
-### 1. Clone into your project
+### 1. Start a bundle
+
+```bash
+python3 scripts/okf_new_bundle.py ../my-new-corpus --title "My New Corpus"
+```
+
+A complete bundle as its own repo — kit attached as a pinned submodule, domain-only ontology,
+inbox, double-clickable `check.command` and `update-kit.command`, and CI — checked before the
+command exits. See `docs/OPERATING.md`.
+
+### 1b. Or clone into an existing project
 
 ```bash
 git clone https://github.com/adamsonwalter/okf-spec-build .

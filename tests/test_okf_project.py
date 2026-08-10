@@ -233,6 +233,30 @@ class TestLogSemantics(ProjectionFixture):
         self.assertEqual(self.build().returncode, 0)
 
 
+class TestNotConcepts(ProjectionFixture):
+    """Files that look like concepts and are not."""
+
+    def test_all_caps_files_are_instructions_not_concepts(self):
+        # "README.md".isupper() is False because of the extension — testing the
+        # whole name instead of the stem projected README.md as a concept.
+        self.write("README.md", "# Readme\n\nHow to use this bundle.\n")
+        self.write("AGENTS.MD", "# Agents\n\nInstructions.\n")
+        self.build()
+        titles = {c["title"] for c in self.master_json(os.path.basename(self.root))["concepts"]}
+        self.assertNotIn("Readme", titles)
+        self.assertNotIn("Agents", titles)
+
+    def test_a_nested_bundle_is_not_this_bundle_s_content(self):
+        # The kit arrives as a submodule carrying its own ontology and stubs.
+        # Without this a 4-file bundle projected 25 concepts.
+        self.write("okf-kit/ontology.md", ONTOLOGY)
+        self.write("okf-kit/stubs/gap.md", concept("Kit Gap"))
+        self.build()
+        titles = {c["title"] for c in self.master_json(os.path.basename(self.root))["concepts"]}
+        self.assertNotIn("Kit Gap", titles)
+        self.assertEqual(len(titles), 2)      # alpha + beta only
+
+
 class TestFailsLoudly(ProjectionFixture):
     def test_empty_registry_section_stops_the_build(self):
         # An empty registry is indistinguishable from a permissive one.

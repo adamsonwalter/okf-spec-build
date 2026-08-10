@@ -2,6 +2,15 @@
 
 ## 2026-08-09
 
+* **Kit**: [scripts/okf_new_bundle.py](scripts/okf_new_bundle.py) — new. Scaffolds a complete bundle as its own repo: kit attached as a pinned submodule, domain-only ontology, log, index, README, inbox, both `.command` wrappers and CI. Runs the checker before exiting, so a bundle is conformant at birth rather than at first use. Replaces a hand-written recipe that told you to copy the kit's ontology and cut it down — the copy-then-drift this layer exists to prevent.
+* **Kit**: [scripts/okf_check.py](scripts/okf_check.py), [scripts/okf_project.py](scripts/okf_project.py) — **bundles now inherit the kit's registries** rather than copying them. Both read `okf-kit/ontology.md` first and merge the bundle's own on top, so a bundle declares domain additions only and has no copy to lose a rule from. The reference bundle now sees all 17 rules with none restated locally.
+* **Kit**: [scripts/okf_project.py](scripts/okf_project.py) — two bugs found by scaffolding a real bundle. A subtree with its own ontology.md is a separate bundle and is no longer projected as content (a 4-file bundle reported 25 concepts). And the ALL-CAPS rule now tests the stem: `"README.md".isupper()` is False because of the extension, which had quietly projected README.md as a concept and pushed the reference bundle to 105.
+* **Kit**: [templates/check.command](templates/check.command), [templates/update-kit.command](templates/update-kit.command) — promoted from the reference bundle so every new bundle gets them.
+* **Kit**: [tests/test_okf_project.py](tests/test_okf_project.py) — tests for both bugs. 104 across the kit.
+* **Kit**: [CHANGELOG.md](CHANGELOG.md) — v2.10.0.
+
+## 2026-08-09
+
 * **Kit**: [ontology.md](ontology.md) — v0.8 → v0.9. New §Authority Posture: `authoritative` / `supporting` / `provenance` / `illustrative`, **declared per area rather than per document**, so a bundle carrying adjacent material can state the distinction once instead of maintaining a caveat in every file. Added V13 (WARNING): no authoritative concept may rest on supporting or illustrative material via `depends-on`, `part-of` or `derived-from`; `provenance` exempt, `references` not load-bearing. Unknown posture is an ERROR, an undeclared path defaults to `supporting`, and no declaration at all reports SKIP rather than silence.
 * **Kit**: [scripts/okf_check.py](scripts/okf_check.py), [scripts/okf_project.py](scripts/okf_project.py) — V13 implemented against the extracted graph; posture carried per concept into the JSON, and an optional `Disclaimer` from §Projection carried in the master file's header.
 * **Kit**: [tests/test_okf_graph.py](tests/test_okf_graph.py) — 9 posture tests. 102 across the kit.

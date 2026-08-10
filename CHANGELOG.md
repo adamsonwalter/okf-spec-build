@@ -8,6 +8,45 @@ Format: [Semantic Versioning](https://semver.org) — MAJOR.MINOR.PATCH
 
 ---
 
+## [2.9.0] — 2026-08-09
+
+### Added — Authority Posture (ontology v0.8 → v0.9)
+
+A bundle can now say what it is the **authority** for and what it merely carries as
+**context** — declared per area, not per document.
+
+| Posture | Meaning |
+|---|---|
+| `authoritative` | This bundle is the authority for these facts. |
+| `supporting` | Reliable context, deliberately not a complete treatment, not to be cited as authority. |
+| `provenance` | Sources and audits the material rests on. |
+| `illustrative` | Worked examples. |
+
+**Declared per area is the whole point.** A bundle that carries adjacent material — Corporations
+Act context inside a privacy corpus, say — otherwise needs a caveat maintained in every file,
+which drifts within a month, and the first caveat to go is on the material that most needs one.
+Declared once per folder, new material inherits its posture from where it lands.
+
+- **V13 (WARNING)** — no `authoritative` concept may rest on `supporting` or `illustrative`
+  material via `depends-on`, `part-of` or `derived-from`. Authority resting on context is
+  invisible in prose and obvious in the graph. `provenance` is exempt: resting on a source
+  document is what provenance *is*. `references` is not load-bearing and never flags.
+- Unknown posture is an **ERROR**; an undeclared path defaults to `supporting`, because
+  understating authority is safe and overstating it is not. Longest matching scope wins.
+- No declaration at all reports **SKIP**, not silence.
+- **Posture travels into the projection** per concept, and `# Projection` gains an optional
+  `Disclaimer` carried in the master file's header — so a consuming application receives the
+  caveat with the knowledge instead of being trusted to add it.
+
+Run against the reference bundle it found **4 real cases** of authoritative material resting on
+supporting material, each a genuine modelling question rather than noise.
+
+### Added
+
+- 9 tests. **102 across the kit.**
+
+---
+
 ## [2.8.0] — 2026-08-09
 
 ### Added — the kit can finally build a bundle's projections

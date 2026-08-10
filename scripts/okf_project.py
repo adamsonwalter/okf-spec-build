@@ -71,6 +71,7 @@ def read_projection_config(root: Path, ontology_text: str) -> dict:
         "title": root.name,
         "schema": f"{root.name}/concepts",
         "tag_slices": [],
+        "disclaimer": "",
     }
     meta, _ = strip_frontmatter(ontology_text)
     if meta.get("title"):
@@ -94,6 +95,8 @@ def read_projection_config(root: Path, ontology_text: str) -> dict:
             config["title"] = value
         elif key == "schema id" and value:
             config["schema"] = value
+        elif key == "disclaimer" and value:
+            config["disclaimer"] = value
         elif key == "tag slices":
             config["tag_slices"] = [t.strip().strip("`") for t in value.split(",") if t.strip()]
     return config
@@ -203,6 +206,7 @@ def build_header(config, scope, concept_count, generated, log_head) -> str:
         "> To update: regenerate this file and replace the existing upload.\n"
         "> **ONE FILE IN = ONE FILE OUT.**"
     )
+    disclaimer = (f"\n> **{config['disclaimer']}**\n" if config.get("disclaimer") else "")
     return (
         f"# {config['title']} — Knowledge Projection\n\n"
         f"| Field | Value |\n|---|---|\n"
@@ -211,7 +215,7 @@ def build_header(config, scope, concept_count, generated, log_head) -> str:
         f"| Concepts included | {concept_count} |\n"
         f"| Log head | {log_head} |\n"
         f"| Sync status | {sync_status(generated[:10], log_head)} |\n\n"
-        f"{upload}\n"
+        f"{upload}\n{disclaimer}"
     )
 
 
@@ -332,7 +336,17 @@ def read_edges(root: Path) -> tuple:
     return [e.as_dict() for e in edges], None
 
 
+def read_postures(root):
+    """Declared authority postures, so each concept can carry its own."""
+    try:
+        import okf_check
+        return okf_check.load_registries(okf_check.Bundle(str(root)), [])["postures"], okf_check
+    except Exception:
+        return [], None
+
+
 def build_structured(root, config, entries, scope, generated, log_head, ontology):
+    postures, checker = read_postures(root)
     concepts = []
     for title, _meta_line, meta, body, path in entries:
         concepts.append({
@@ -346,6 +360,11 @@ def build_structured(root, config, entries, scope, generated, log_head, ontology
             "sourcePath": str(path.relative_to(root)),
             "body": body.strip(),
             "citations": extract_citations(body),
+            # Declared per area, not per document — an application can render the
+            # right caveat without the bundle repeating one in every file.
+            "authorityPosture": (
+                checker.posture_of(str(path.relative_to(root)), postures)
+                if checker else "supporting"),
         })
     edges, edges_note = read_edges(root)
     payload = {
@@ -357,6 +376,7 @@ def build_structured(root, config, entries, scope, generated, log_head, ontology
         "logHeadAnyEntry": read_log_dates(root)[1],
         "syncStatus": sync_status(generated[:10], log_head),
         "ontology": ontology,
+        "disclaimer": config.get("disclaimer", ""),
         "conceptCount": len(concepts),
         "concepts": concepts,
     }

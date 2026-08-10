@@ -2,6 +2,13 @@
 
 ## 2026-08-09
 
+* **Kit**: [ontology.md](ontology.md) — v0.8 → v0.9. New §Authority Posture: `authoritative` / `supporting` / `provenance` / `illustrative`, **declared per area rather than per document**, so a bundle carrying adjacent material can state the distinction once instead of maintaining a caveat in every file. Added V13 (WARNING): no authoritative concept may rest on supporting or illustrative material via `depends-on`, `part-of` or `derived-from`; `provenance` exempt, `references` not load-bearing. Unknown posture is an ERROR, an undeclared path defaults to `supporting`, and no declaration at all reports SKIP rather than silence.
+* **Kit**: [scripts/okf_check.py](scripts/okf_check.py), [scripts/okf_project.py](scripts/okf_project.py) — V13 implemented against the extracted graph; posture carried per concept into the JSON, and an optional `Disclaimer` from §Projection carried in the master file's header.
+* **Kit**: [tests/test_okf_graph.py](tests/test_okf_graph.py) — 9 posture tests. 102 across the kit.
+* **Kit**: [CHANGELOG.md](CHANGELOG.md) — v2.9.0.
+
+## 2026-08-09
+
 * **Kit**: [scripts/okf_project.py](scripts/okf_project.py) — new, and the gap it closes is the largest one found: the kit shipped no projection builder at all. The implementation lived only inside one target bundle, so every other bundle generated from this kit had no way to produce a master file. Now bundle-agnostic — slug, title, schema id and tag slices are read from a `# Projection` section in the bundle's own ontology, defaulting from the directory when absent. The JSON gains `edges`, so the relationship graph ships with the knowledge instead of being a separate command; an absent graph is reported with a reason rather than as an empty list.
 * **Kit**: [tests/test_okf_project.py](tests/test_okf_project.py) — 15 tests building synthetic bundles in temp directories, so generality is asserted rather than assumed. 93 across the kit.
 * **Kit**: [README.md](README.md), [AGENTS.MD](AGENTS.MD) — registered the builder and told PROJECTION_AGENT to run the kit's script rather than write a per-bundle one, since that duplication is what caused the drift.

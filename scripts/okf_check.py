@@ -35,6 +35,12 @@ import sys
 ERROR, WARNING, SKIP = "ERROR", "WARNING", "SKIP"
 
 RESERVED_NAMES = {"index.md", "log.md"}
+POSTURES = {"authoritative", "supporting", "provenance", "illustrative"}
+# Understating authority is safe; overstating it is not.
+DEFAULT_POSTURE = "supporting"
+# Authority may rest on provenance — that is what provenance is for.
+WEAK_POSTURES = {"supporting", "illustrative"}
+LOAD_BEARING = {"depends-on", "part-of", "derived-from"}
 # Generated or non-concept trees. projections/ is rebuilt from the concepts, so
 # checking it would double-report every finding against a derived copy.
 EXCLUDED_DIRS = {".git", "projections", "node_modules", "__pycache__", ".venv",
@@ -214,7 +220,7 @@ class Bundle:
 
 def load_registries(bundle, findings):
     """Types, tags and rules from ontology.md, keyed by name."""
-    registries = {"types": {}, "tags": set(), "bands": {}, "relationships": set(),
+    registries = {"types": {}, "tags": set(), "bands": {}, "postures": [], "relationships": set(),
                   "rules": {}, "deliverable_contracts": [], "coverage_contracts": []}
     if not os.path.exists(bundle.ontology_path):
         findings.append(Finding(ERROR, "ONTOLOGY", "ontology.md",
@@ -249,6 +255,17 @@ def load_registries(bundle, findings):
                 registries["relationships"].add(_ident(row["Relationship"]))
             if "Rule" in row and "Check" in row:
                 registries["rules"][_ident(row["Rule"])] = row.get("Severity", ERROR).strip()
+            if "Scope" in row and "Posture" in row:
+                scope = _ident(row["Scope"])
+                posture = _ident(row["Posture"]).lower()
+                if scope and not scope.startswith("*"):
+                    if posture not in POSTURES:
+                        findings.append(Finding(
+                            ERROR, "ONTOLOGY", "ontology.md",
+                            f"authority posture {posture!r} for scope {scope!r} is not one "
+                            f"of {sorted(POSTURES)}"))
+                    else:
+                        registries["postures"].append((scope, posture))
             if "Contract ID" in row and "Deliverable file" in row:
                 registries["deliverable_contracts"].append(row)
             if "Contract ID" in row and any(
@@ -338,6 +355,50 @@ def _check_relationship_graph(bundle, concepts, findings):
         if rel.replace(os.sep, "/").startswith("archive/") or front.get("superseded_by"):
             dead.add(rel)
     findings.extend(okf_graph.check_graph(bundle, edges, concept_paths, dead))
+
+    _check_authority_posture(bundle, edges, findings)
+
+
+def posture_of(rel_path, postures):
+    """The declared posture for a concept path, or the safe default.
+
+    Longest matching scope wins, so a specific folder can override a broad one.
+    """
+    best, best_len = DEFAULT_POSTURE, -1
+    normalised = rel_path.replace(os.sep, "/")
+    for scope, posture in postures:
+        scope_norm = scope.rstrip("/")
+        if (normalised == scope_norm or normalised.startswith(scope_norm + "/")) \
+                and len(scope_norm) > best_len:
+            best, best_len = posture, len(scope_norm)
+    return best
+
+
+def _check_authority_posture(bundle, edges, findings):
+    """V13 — authority must not rest on context.
+
+    Invisible in prose, obvious in the graph: an authoritative concept that
+    depends on supporting material is quietly borrowing weight it does not have.
+    """
+    registries = load_registries(bundle, [])
+    postures = registries["postures"]
+    if not postures:
+        findings.append(Finding(SKIP, "V13", None,
+                                "no Authority Posture declared — every concept defaults to "
+                                f"{DEFAULT_POSTURE!r}, so nothing is checked"))
+        return
+    for edge in edges:
+        if edge.relationship not in LOAD_BEARING:
+            continue
+        source_posture = posture_of(edge.source, postures)
+        target_posture = posture_of(edge.target, postures)
+        if source_posture == "authoritative" and target_posture in WEAK_POSTURES:
+            findings.append(Finding(
+                WARNING, "V13", edge.source,
+                f"line {edge.line}: authoritative material rests on {target_posture} "
+                f"material — '**{edge.relationship}**' to {edge.target}. Either the "
+                f"target is more authoritative than declared, or this should be a "
+                f"'references' edge rather than a load-bearing one"))
 
 
 def _check_types_and_fields(bundle, registries, concepts, findings):

@@ -39,6 +39,8 @@ tags: [ontology, system, governance]
 | `depends-on` | A → B | "requires" | A depends on B |
 | `references` | A → B | "see" | A references B |
 | `supersedes` | A → B | "replaces" | A supersedes B |
+| `part-of` | A → B | "component of" | A is part of B |
+| `derived-from` | A → B | "based on" | A derived from B |
 
 # Tag Taxonomy
 
@@ -219,9 +221,81 @@ class TestTaxonomyIsReadFromOntology(GraphFixture):
         self.assertEqual([e.relationship for e in edges], ["governs"])
 
     def test_relationship_absent_from_ontology_is_rejected(self):
-        _, findings = self.edges_from("- [Target](target.md) — **part-of**.")
+        _, findings = self.edges_from("- [Target](target.md) — **authored-by**.")
         self.assertTrue(any(f.severity == K.ERROR for f in findings))
 
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestAuthorityPosture(GraphFixture):
+    """V13 — authority must not rest on context (docs/DECISIONS.md, ontology v0.9)."""
+
+    POSTURE = """
+# Authority Posture
+
+| Scope | Posture | Note |
+|---|---|---|
+| `law/` | authoritative | The provisions. |
+| `context/` | supporting | Helpful, not complete. |
+| `sources/` | provenance | What it rests on. |
+"""
+
+    def _bundle(self, source_dir, target_dir, relationship):
+        self.write("ontology.md", ONTOLOGY + self.POSTURE)
+        self.write(f"{target_dir}/target.md", concept("Target"))
+        self.write(f"{source_dir}/source.md", concept(
+            "Source", f"- Rests on [Target](../{target_dir}/target.md) — **{relationship}**."))
+        return K.run_checks(K.Bundle(self.root))[0]
+
+    def test_authoritative_resting_on_supporting_warns(self):
+        findings = self._bundle("law", "context", "depends-on")
+        v13 = [f for f in findings if f.check == "V13"]
+        self.assertEqual(len(v13), 1)
+        self.assertEqual(v13[0].severity, K.WARNING)
+        self.assertIn("rests on supporting", v13[0].message)
+
+    def test_part_of_and_derived_from_are_load_bearing_too(self):
+        for relationship in ("part-of", "derived-from"):
+            with self.subTest(relationship=relationship):
+                self.setUp()
+                findings = self._bundle("law", "context", relationship)
+                self.assertTrue([f for f in findings if f.check == "V13"])
+
+    def test_references_is_not_load_bearing(self):
+        # Citing context is fine; resting on it is not.
+        findings = self._bundle("law", "context", "references")
+        self.assertFalse([f for f in findings if f.check == "V13"])
+
+    def test_provenance_is_exempt(self):
+        # Resting on a source document is what provenance is for.
+        findings = self._bundle("law", "sources", "derived-from")
+        self.assertFalse([f for f in findings if f.check == "V13"])
+
+    def test_supporting_resting_on_supporting_is_fine(self):
+        findings = self._bundle("context", "context", "depends-on")
+        self.assertFalse([f for f in findings if f.check == "V13"])
+
+    def test_undeclared_paths_default_to_supporting(self):
+        # Understating authority is safe; overstating it is not.
+        self.write("ontology.md", ONTOLOGY + self.POSTURE)
+        self.assertEqual(K.posture_of("nowhere/thing.md", [("law/", "authoritative")]),
+                         K.DEFAULT_POSTURE)
+
+    def test_longest_matching_scope_wins(self):
+        postures = [("law/", "authoritative"), ("law/draft/", "illustrative")]
+        self.assertEqual(K.posture_of("law/x.md", postures), "authoritative")
+        self.assertEqual(K.posture_of("law/draft/x.md", postures), "illustrative")
+
+    def test_no_declaration_reports_skip_not_silence(self):
+        findings = self.full_check()
+        skips = [f for f in findings if f.check == "V13" and f.severity == K.SKIP]
+        self.assertTrue(skips)
+
+    def test_unknown_posture_is_an_error(self):
+        self.write("ontology.md", ONTOLOGY + self.POSTURE.replace(
+            "| `law/` | authoritative |", "| `law/` | pretty-solid |"))
+        findings = K.run_checks(K.Bundle(self.root))[0]
+        self.assertTrue([f for f in findings
+                         if f.check == "ONTOLOGY" and f.severity == K.ERROR])

@@ -254,6 +254,7 @@ CONFORMANCE_AGENT checks these rules in addition to OKF v0.1 base conformance (�
 | V10 | Every relationship edge target resolves to a concept in this bundle | ERROR |
 | V11 | No relationship edge points into an archived or superseded concept | ERROR |
 | V12 | A concept's `confidence` falls inside the declared band of every tag it carries | WARNING |
+| V13 | No `authoritative` concept rests on `supporting` or `illustrative` material via `depends-on`, `part-of` or `derived-from` | WARNING |
 
 ## Conventions the checker depends on
 
@@ -302,6 +303,43 @@ then not applied.
 exists to catch. Its own enhancements file records someone later puzzling over why V3 does not
 exist. It does; it is here. Record a deliberate exclusion in §DEPRECATED TYPES or a bundle
 note, so the next reader finds a decision instead of a hole.
+
+---
+
+# Authority Posture
+
+Declares what each part of a bundle is **for**, so a reader — and a consuming application —
+can tell an authoritative statement from supporting context.
+
+**The point is that posture is declared per area, not per document.** New material inherits
+the posture of where it lands, so an author adding a reference does not have to classify it,
+and a bundle does not accumulate an unmaintainable set of per-file caveats.
+
+| Posture | Meaning |
+|---|---|
+| `authoritative` | This bundle is the authority for these facts. Downstream bundles must not contradict them. |
+| `supporting` | Reliable context that helps a reader apply the authoritative material. **Deliberately not a complete treatment**, and not to be cited as authority in its own right. |
+| `provenance` | Source documents, audits and claim registers that the material above rests on. |
+| `illustrative` | Worked examples and applied fact patterns. |
+
+| Scope | Posture | Note |
+|---|---|---|
+| *(none at bundle initialisation — declare the first time a bundle carries material outside its own authority)* | — | — |
+
+**Default is `supporting`** for any path matching no row. Understating authority is safe;
+overstating it is not.
+
+**V13** enforces the one thing that must not happen: an `authoritative` concept must not rest
+on `supporting` or `illustrative` material through `depends-on`, `part-of` or `derived-from`.
+Authority resting on context is the failure this section exists to catch — it is invisible in
+prose and obvious in the graph. `provenance` is exempt, because resting on a source document
+is what provenance *is*.
+
+**V13 is a WARNING.** A posture boundary is a modelling judgment; the check surfaces where
+authority and context have blurred, it does not adjudicate. See docs/DECISIONS.md D4.
+
+**Posture travels into the projection**, per concept, so an application can render the right
+caveat without the bundle repeating a disclaimer in every file.
 
 ---
 
@@ -472,3 +510,4 @@ types in existing concept files should flag for migration, not auto-migrate.
 | 0.6 | 2026-08-09 | Relationships become traversable. Added §Writing a relationship so it can be traversed: a `# Related` bullet is an edge, the relationship is marked in bold from the closed ten, one bullet carries one relationship and any number of links, wrapped bullets are joined, and a bullet with links but no marker is an allowed cross-reference that produces no edge. **Relationships are directional and inverses are not registered** — `referenced-by`, `depended-on-by`, `superseded` fail the build; put the edge on the other concept instead. Keeps the vocabulary closed at ten, which is what makes an unregistered relationship detectable. Added V10 (every edge target resolves to a concept) and V11 (no edge points into an archived or superseded concept), both ERROR — V11 is the decay guard, since a superseded concept still cited in prose reads exactly like a live one and V6 only guards the frontmatter half. |
 | 0.7 | 2026-08-09 | Certainty becomes checkable without imposing a vocabulary. §Tag Taxonomy gains a **Certainty band** column; V12 enforces every declaration, so registering a certainty tag is a table cell rather than a rule. Bands ship empty — they are a domain's epistemics, not the kit's — with the instruction to set them to what the corpus actually holds, because a band tighter than authored practice fails a pile of concepts on day one and gets switched off. V12 is WARNING and stays one until a real bundle passes clean. **V3 rewritten**: a concept carrying `confidence` must show its working — either `confidence_sources` *or* a `# Citations` section. The old form presumed confidence was computed from a countable set; measured against the reference bundle, 0 of 104 concepts carry `confidence_sources` and 104 of 104 carry `# Citations`, so the rule was wrong for judgment-based corpora and was silently dropped rather than argued with. Registered V10 and V11 from v0.6 in the rules table. |
 | 0.8 | 2026-08-09 | CHECK_7 becomes a real set diff. §Deliverable Parity Contracts gains **`Record pattern`** (a one-group regex read against the deliverable's text) and **`Source key pattern`** (a one-group regex read against each source file's `title`, defaulting to the filename stem). The kit stays format-agnostic — a hand-authored artifact may be HTML, embedded JSON or a deck, and the contract declares how to read it rather than the kit guessing. The diff names what is missing on *each* side, so an orphan record in the deliverable is now detectable; filename matching never could see one. A contract with no `Record pattern` reports **SKIP, never PASS**. |
+| 0.9 | 2026-08-09 | Added §Authority Posture — `authoritative` / `supporting` / `provenance` / `illustrative`, declared **per area rather than per document** so new material inherits its posture from where it lands. A bundle can now say what it is the authority for and what it merely carries as context, without maintaining a per-file caveat. Added **V13** (WARNING): no authoritative concept may rest on supporting or illustrative material via `depends-on`, `part-of` or `derived-from` — authority resting on context is invisible in prose and obvious in the graph. `provenance` is exempt, since resting on a source document is what provenance is. Posture travels into the projection per concept, and the §Projection section gains an optional `Disclaimer` carried in the projection header, so a consuming application receives the caveat with the knowledge instead of being trusted to add it. |

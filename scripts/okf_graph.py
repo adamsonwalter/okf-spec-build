@@ -101,7 +101,9 @@ def _resolve(bundle, source_path, target):
     clean = target.split("#", 1)[0].split("?", 1)[0].strip()
     if not clean or not clean.endswith(".md"):
         return None
-    absolute = os.path.normpath(os.path.join(os.path.dirname(source_path), clean))
+    # A leading "/" means the bundle root, not the filesystem root.
+    base = bundle.root if clean.startswith("/") else os.path.dirname(source_path)
+    absolute = os.path.normpath(os.path.join(base, clean.lstrip("/")))
     return os.path.relpath(absolute, bundle.root)
 
 

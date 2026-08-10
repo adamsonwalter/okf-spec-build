@@ -2,6 +2,12 @@
 
 ## 2026-08-09
 
+* **Kit**: [scripts/okf_check.py](scripts/okf_check.py), [scripts/okf_graph.py](scripts/okf_graph.py) — three false-positive classes fixed, all found by pointing the checks at a second real bundle for the first time. A leading `/` in a link is bundle-root-relative, not filesystem-absolute (134 false broken links against 20 real targets); a Coverage Ledger `Status` may carry a note such as `Captured *(closed 2026-07-03 remediation pass)*`, which exact matching read as unresolved (8 false gaps in a ledger that had been deliberately remediated); and `.ai_context/` is agent scratch, which `okf_project.py` already excluded and `okf_check.py` did not. An annotated `Not yet checked` still fails, so the note cannot smuggle a row through.
+* **Kit**: [tests/test_okf_check.py](tests/test_okf_check.py) — 5 tests, one per convention plus the case that must still fail. 109 across the kit.
+* **Kit**: [CHANGELOG.md](CHANGELOG.md) — v2.10.1.
+
+## 2026-08-09
+
 * **Kit**: [scripts/okf_new_bundle.py](scripts/okf_new_bundle.py) — new. Scaffolds a complete bundle as its own repo: kit attached as a pinned submodule, domain-only ontology, log, index, README, inbox, both `.command` wrappers and CI. Runs the checker before exiting, so a bundle is conformant at birth rather than at first use. Replaces a hand-written recipe that told you to copy the kit's ontology and cut it down — the copy-then-drift this layer exists to prevent.
 * **Kit**: [scripts/okf_check.py](scripts/okf_check.py), [scripts/okf_project.py](scripts/okf_project.py) — **bundles now inherit the kit's registries** rather than copying them. Both read `okf-kit/ontology.md` first and merge the bundle's own on top, so a bundle declares domain additions only and has no copy to lose a rule from. The reference bundle now sees all 17 rules with none restated locally.
 * **Kit**: [scripts/okf_project.py](scripts/okf_project.py) — two bugs found by scaffolding a real bundle. A subtree with its own ontology.md is a separate bundle and is no longer projected as content (a 4-file bundle reported 25 concepts). And the ALL-CAPS rule now tests the stem: `"README.md".isupper()` is False because of the extension, which had quietly projected README.md as a concept and pushed the reference bundle to 105.

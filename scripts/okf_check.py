@@ -46,6 +46,7 @@ LOAD_BEARING = {"depends-on", "part-of", "derived-from"}
 EXCLUDED_DIRS = {".git", "projections", "node_modules", "__pycache__", ".venv",
                  "templates",      # seeds for reserved files, not concepts
                  "inbox",          # raw source documents awaiting ingestion
+                 ".ai_context",    # agent scratch, not concepts
                  "deliverables"}   # hand-authored artifacts, not concepts
 
 ISO_DATE = re.compile(r"^##\s+(\d{4}-\d{2}-\d{2})\s*$", re.MULTILINE)
@@ -543,7 +544,14 @@ def _check_links(bundle, concepts, findings):
             clean = target.split("#", 1)[0].split("?", 1)[0]
             if not clean:
                 continue
-            if not os.path.exists(os.path.normpath(os.path.join(base, clean))):
+            # A leading "/" means the bundle root, not the filesystem root. A
+            # real corpus used this convention throughout and produced 134 false
+            # broken links against 20 distinct, existing targets.
+            if clean.startswith("/"):
+                resolved = os.path.join(bundle.root, clean.lstrip("/"))
+            else:
+                resolved = os.path.join(base, clean)
+            if not os.path.exists(os.path.normpath(resolved)):
                 findings.append(Finding(WARNING, "CHECK_5", rel,
                                         f"link target does not exist on disk: {target}"))
 
@@ -656,8 +664,13 @@ def _check_coverage_contracts(bundle, registries, findings):
                 status_key = next((k for k in entry if k.strip().lower() == "status"), None)
                 if not status_key:
                     continue
-                status = entry[status_key].strip().strip("*").lower()
-                if status not in {"captured", "not applicable", "n/a", "partial"}:
+                # The Status cell often carries a note — "Captured *(closed
+                # 2026-07-03 remediation pass)*". Match the leading status word,
+                # not the whole cell, or every annotated row reads as unresolved.
+                raw_status = entry[status_key].strip().strip("*").strip()
+                status = re.split(r"\s*[*(\[]", raw_status, 1)[0].strip().lower()
+                if status not in {"captured", "not applicable", "n/a", "partial",
+                                  "not required"}:
                     first = next(iter(entry.values()), "?")
                     unresolved.append(f"{first} ({entry[status_key].strip()})")
         if unresolved:

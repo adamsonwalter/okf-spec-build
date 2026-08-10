@@ -313,6 +313,70 @@ class TestLinksTagsAndStubs(BundleFixture):
         self.assertWarns("V3")
 
 
+class TestConventionsFoundInRealCorpora(BundleFixture):
+    """Three false-positive classes found by running on a second real bundle."""
+
+    def test_root_relative_link_resolves_from_the_bundle_root(self):
+        # A leading "/" means the bundle root, not the filesystem root. One
+        # corpus used this throughout: 134 false broken links, 20 real targets.
+        self.write("case-studies/one.md", CONCEPT)
+        self.write("a-thing.md", CONCEPT + "\nSee [one](/case-studies/one.md).\n")
+        self.assertNotIn("CHECK_5", self.codes(K.WARNING))
+
+    def test_root_relative_link_to_a_missing_file_still_warns(self):
+        self.write("a-thing.md", CONCEPT + "\nSee [gone](/nowhere/gone.md).\n")
+        self.assertWarns("CHECK_5")
+
+    def test_ai_context_is_tooling_not_concepts(self):
+        self.write(".ai_context/system_map.md", "# Map\n\nNo frontmatter.\n")
+        self.assertNotIn("CHECK_1", self.codes(K.ERROR))
+
+    def test_ledger_status_may_carry_a_note(self):
+        # "Captured *(closed 2026-07-03 remediation pass)*" is captured.
+        self.write("ontology.md", ONTOLOGY.replace(
+            "| *(none at bundle initialisation)* | — | — | — |\n",
+            "| `src` | `coverage/ledger.md` | A doc | ERROR |\n"))
+        self.write("coverage/ledger.md", """\
+---
+type: Coverage Ledger
+title: Ledger
+description: Inventory.
+timestamp: 2026-08-09T00:00:00Z
+tags: [coverage]
+---
+
+# Ledger
+
+| Unit | Status | Captured in |
+|---|---|---|
+| Box 4 | Captured *(closed 2026-07-03 remediation pass)* | a-thing.md |
+| Box 8 | Partial (see note) | a-thing.md |
+""")
+        self.assertNotIn("CHECK_9", self.codes(K.ERROR))
+
+    def test_an_annotated_not_yet_checked_still_fails(self):
+        # The note must not become a way to smuggle an unresolved row past.
+        self.write("ontology.md", ONTOLOGY.replace(
+            "| *(none at bundle initialisation)* | — | — | — |\n",
+            "| `src` | `coverage/ledger.md` | A doc | ERROR |\n"))
+        self.write("coverage/ledger.md", """\
+---
+type: Coverage Ledger
+title: Ledger
+description: Inventory.
+timestamp: 2026-08-09T00:00:00Z
+tags: [coverage]
+---
+
+# Ledger
+
+| Unit | Status | Captured in |
+|---|---|---|
+| Box 4 | Not yet checked *(waiting on the second pass)* | — |
+""")
+        self.assertFails("CHECK_9")
+
+
 class TestCertaintyBands(BundleFixture):
     """V12 — declared in the registry, enforced by one rule, WARNING by design."""
 

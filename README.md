@@ -84,6 +84,7 @@ Google spec (and why the ontology is our convention, not an OKF requirement), se
 | `scripts/` | **Executable code, shipped with the kit so every generated bundle has it from day one.** `okf_project.py` builds a bundle's projections; `okf_check.py` runs CHECK_1–CHECK_9 and V1–V12 and exits non-zero; `okf_graph.py` extracts the typed relationship graph. |
 | `tests/` | Tests for `scripts/`. `python3 -m unittest discover -s tests`. |
 | `.github/workflows/` | CI. `conformance.yml` checks this kit; `bundle-conformance.yml` is the copy a generated bundle uses against its `okf-kit/` submodule. |
+| `docs/OPERATING.md` | **How the kit and its bundles fit together day to day** — what to pull, when, and what breaks if you don't. |
 | `docs/DECISIONS.md` | **Read before changing a check.** Why each rule is shaped the way it is, what was rejected, and the measurements behind it. |
 
 ---
@@ -96,6 +97,18 @@ lowercase.md  = OKF concept documents (frontmatter required, type required, inde
 ```
 
 ---
+
+## Kit and bundles — the one-paragraph version
+
+The kit is the **machinery**; a bundle is the **knowledge**. They are separate repos. A bundle
+carries the kit inside itself at `okf-kit/` as a submodule **pinned to one kit commit**, so it
+records exactly which version of the machinery last checked it.
+
+Nothing propagates automatically. Working on the kit never requires pulling a bundle, and
+working on a bundle never requires being inside the kit. A bundle takes a kit change only when
+you run its `update-kit.command` — so one kit change cannot break several bundles at once.
+
+Full instructions, including what happens if you forget to push or pull: **`docs/OPERATING.md`**.
 
 ## Quick Start
 

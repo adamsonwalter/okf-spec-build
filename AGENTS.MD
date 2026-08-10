@@ -488,6 +488,9 @@ ACTION:
 
       python3 <kit>/scripts/okf_project.py .
 
+  For how the kit and its bundles fit together — what to pull, when, and what
+  breaks if you do not — see docs/OPERATING.md.
+
   Before changing a severity, relaxing a guard or adding a rule, read
   docs/DECISIONS.md — several of these were settled against measured evidence and
   should not be re-litigated from first principles.

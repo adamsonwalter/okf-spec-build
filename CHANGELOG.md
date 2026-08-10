@@ -8,6 +8,48 @@ Format: [Semantic Versioning](https://semver.org) — MAJOR.MINOR.PATCH
 
 ---
 
+## [2.12.0] — 2026-08-10
+
+### Added — staleness, as a warning that never gates
+
+The mechanism only. **No horizon values are set on any concept** — choosing them is a domain
+judgment, and setting them wrong is worse than not setting them (see below).
+
+- **`is_stale(front, today)`** — the §5.5 predicate, `today >= stale_after`, and nothing more.
+- **V17** (WARNING) — a concept past its review horizon. **WARNING by construction.** §10.5
+  mandates refusal for exactly one thing, a failing attestation, and offers "warn **or**
+  refuse" for staleness; §5.3 calls the whole family "advisory signals, not access control".
+  The message names the last verification date and the derived tier, so the warning is
+  actionable rather than nagging.
+- **`--today YYYY-MM-DD`** on `okf_check.py` — report what a *future* date will stale out, so
+  a horizon can be chosen against its consequences instead of guessed.
+- Projections carry it both ways: the master `.md` states the horizon inline (a corpus pasted
+  into a cloud Project has no clock), and the `.json` ships `staleAfter`, `stale` and
+  **`staleEvaluatedAt`**. A consumer with a clock MUST re-derive from `staleAfter` — a
+  projection rebuilds when concepts change, not when dates pass, so the baked flag ages while
+  the corpus does not. Shipping the evaluation date beside the flag keeps that visible.
+
+### Documented — why it must stay advisory (D12)
+
+These bundles have live consumers. Refusing on staleness would blank out answers about the
+Privacy Act on 11 December 2026 — the day people most need them — because a date passed, not
+because anything was found wrong. **Stale is not wrong, and fresh is not right:** a concept can
+be inaccurate the day it is written and accurate a year past its horizon. A dated answer beats
+both silence and false confidence.
+
+Also recorded: **a horizon is a review cycle, not a content date.** Setting `stale_after` to a
+commencement or effective date expires the whole corpus on one day, makes every answer warn at
+once, and gets the warning switched off — the D4 failure shape exactly. And the **freshness ×
+trust matrix**, whose dangerous cell is *verified + stale*, because the tier reassures while
+the content is out of horizon; an application finds it with
+`trustTier != "unverified" && stale`. The remedy for staleness is a new `verified` event, which
+then justifies moving the horizon forward — so the horizon is the scheduler for the
+verification backlog.
+
+Tests: 132 → **143**, including an explicit guard that V17 never appears at ERROR severity.
+
+---
+
 ## [2.11.0] — 2026-08-10
 
 ### Changed — the kit targets OKF v0.2 (ontology v0.9 → v1.0)

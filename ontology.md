@@ -167,9 +167,55 @@ stale_after: 2026-12-10   # YYYY-MM-DD; stale when today >= this date
 ```
 
 `stale_after` is an absolute date, not a TTL, so staleness is a plain date comparison with no
-reference to when the concept was read. Use it on anything pinned to a commencement date, a
-review cycle, or a pending regulatory decision — that is precisely the material that goes
-quietly wrong.
+reference to when the concept was read. Use it on anything pinned to a review cycle or a
+pending decision — that is precisely the material that goes quietly wrong.
+
+### Staleness is advisory. It warns; it never gates.
+
+**A stale concept is still served.** Spec §10.5 mandates refusal for exactly one thing — a
+failing attestation — and offers "warn **or** refuse" for staleness. §5.3 states the whole
+family are "advisory signals, not access control". **V17** is therefore a WARNING *by
+construction* and must never be promoted to ERROR: that would take a live corpus offline on a
+date rather than on a defect. See `docs/DECISIONS.md` **D12**.
+
+**Stale is not wrong.** A concept can be inaccurate the day it is written and accurate a year
+past its horizon. The horizon schedules a re-check; it judges nothing about correctness. So the
+honest thing for a consumer to show is a **date**, not a hedge — "reviewed 29 Jul 2026" is a
+fact, "may be out of date" is a guess.
+
+### Horizon is a review cycle, not a content date
+
+**Do not set `stale_after` to a date the content is *about*.** A commencement date, an
+effective date or a deadline is a fact belonging in the body. Made a horizon, it expires the
+whole corpus on one day, every answer warns at once, the warning becomes noise, and it gets
+switched off — which is exactly how V3 was lost (D4). Set horizons by how fast the *material*
+moves, and stagger them.
+
+### Freshness × trust — the four cells a consumer renders
+
+The two axes are independent and compose. `trust_tier` says who confirmed it; staleness says
+whether the confirmation is still within its horizon.
+
+| | fresh | past horizon |
+|---|---|---|
+| **verified** (machine / human) | serve normally | serve **with its verification date** — and treat as top of the re-verification queue |
+| **unverified** | serve, noting nothing independent has checked it | serve with both caveats — bottom of trust, top of the backlog |
+
+The cell that matters is **verified + stale**: it reads as trustworthy and is not current, so
+it is the one a consumer must surface. An application finds it with
+`trustTier != "unverified" && stale`.
+
+**The two connect through re-verification.** A concept goes stale; the remedy is a new
+`verified` event, which then justifies moving the horizon forward. That is what turns a flat
+backlog into a prioritised queue.
+
+Projections carry both: the master `.md` states the horizon inline (a corpus pasted into a
+cloud Project has no clock), and the `.json` ships `staleAfter`, `stale` and
+`staleEvaluatedAt`. **A consumer that has a clock MUST re-derive from `staleAfter`** — a
+projection rebuilds when concepts change, not when dates pass, so the baked flag ages.
+
+Planning: `okf_check.py --today YYYY-MM-DD` reports what a future date will stale out, so a
+horizon can be chosen against its consequences instead of guessed.
 
 `status: deprecated` and this kit's `supersedes` / `superseded_by` are complementary, not
 alternatives: `status` marks the state, the reciprocal pair records what replaced it, and
@@ -365,6 +411,7 @@ means "outside this kit's dialect", never "non-conformant with OKF".
 | V14 | Every `generated` / `verified` entry names an actor in the §Actor convention form, and `generated` carries `by` | ERROR |
 | V15 | `status` is one of `draft`/`stable`/`deprecated`, and `stale_after` is a `YYYY-MM-DD` date | ERROR |
 | V16 | Every concept carries `generated` (a bare legacy `timestamp` is a WARNING until migration completes, per §Required frontmatter) | WARNING |
+| V17 | A concept past its `stale_after` review horizon. **WARNING by construction — never promote to ERROR** (§5.3, §10.5; see D12) | WARNING |
 
 ## Conventions the checker depends on
 
@@ -393,7 +440,7 @@ concepts and are checked.
 
 ## Rule numbering — kit rules and bundle rules must not collide
 
-`V1`–`V16` are **reserved by this kit**, and the reserved range grows as the kit adds rules.
+`V1`–`V17` are **reserved by this kit**, and the reserved range grows as the kit adds rules.
 A bundle built from the kit inherits them and must not renumber, redefine, or drop them.
 
 A bundle adding its own rule MUST name it `V-<slug>` — `V-coverage-parity`,

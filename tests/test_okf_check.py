@@ -718,6 +718,70 @@ class TestTrustTiers(unittest.TestCase):
             "human-reviewed")
 
 
+class TestStaleness(unittest.TestCase):
+    """Spec §5.5. A plain date comparison, and advisory only (D12)."""
+
+    def test_before_the_horizon_is_fresh(self):
+        self.assertFalse(K.is_stale({"stale_after": "2026-12-10"}, "2026-08-10"))
+
+    def test_on_the_horizon_is_stale(self):
+        # §5.5: stale when `today >= stale_after`. The boundary day counts.
+        self.assertTrue(K.is_stale({"stale_after": "2026-12-10"}, "2026-12-10"))
+
+    def test_after_the_horizon_is_stale(self):
+        self.assertTrue(K.is_stale({"stale_after": "2026-12-10"}, "2026-12-11"))
+
+    def test_no_horizon_is_never_stale(self):
+        self.assertFalse(K.is_stale({}, "2099-01-01"))
+
+    def test_malformed_horizon_is_not_stale(self):
+        # V15 reports the shape; staleness must not also guess at it.
+        self.assertFalse(K.is_stale({"stale_after": "Dec 2026"}, "2099-01-01"))
+
+    def test_staleness_is_orthogonal_to_trust(self):
+        front = {"stale_after": "2026-01-01",
+                 "verified": {"by": "human:adamson", "at": "2025-06-01"}}
+        self.assertTrue(K.is_stale(front, "2026-08-10"))
+        self.assertEqual(K.trust_tier(front), "human-reviewed")
+
+
+class TestV17NeverGates(unittest.TestCase):
+    """The whole point: a live corpus is warned about, never taken offline."""
+
+    def findings(self, front, today):
+        out = []
+        K._check_v02_families("t.md", front, out, today)
+        return out
+
+    def test_past_horizon_warns(self):
+        f = self.findings({"stale_after": "2026-01-01"}, "2026-08-10")
+        self.assertEqual([(x.check, x.severity) for x in f], [("V17", K.WARNING)])
+
+    def test_v17_is_never_an_error(self):
+        # §10.5 offers "warn or refuse" for staleness and mandates refusal only
+        # for a failing attestation; §5.3 calls these advisory, not access
+        # control. Promoting this severity takes a live corpus offline on a date
+        # rather than on a defect. See docs/DECISIONS.md D12.
+        f = self.findings({"stale_after": "2020-01-01",
+                           "verified": {"by": "human:a", "at": "2019-01-01"}},
+                          "2026-08-10")
+        self.assertTrue(f)
+        self.assertNotIn(K.ERROR, [x.severity for x in f])
+
+    def test_fresh_concept_is_silent(self):
+        self.assertEqual(self.findings({"stale_after": "2099-01-01"}, "2026-08-10"), [])
+
+    def test_message_names_the_last_verification(self):
+        f = self.findings({"stale_after": "2026-01-01",
+                           "verified": {"by": "human:adamson", "at": "2025-06-01"}},
+                          "2026-08-10")
+        self.assertIn("2025-06-01", f[0].message)
+
+    def test_message_says_never_verified_when_it_was_not(self):
+        f = self.findings({"stale_after": "2026-01-01"}, "2026-08-10")
+        self.assertIn("never verified", f[0].message)
+
+
 class TestV02Families(unittest.TestCase):
     def findings(self, front):
         out = []

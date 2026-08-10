@@ -221,6 +221,22 @@ def concept_title(meta: dict, path: Path) -> str:
     return meta.get("title") or path.stem.replace("-", " ").title()
 
 
+def is_stale(meta: dict, today: str) -> bool:
+    """Past its review horizon as at `today`, per spec §5.5. Advisory only.
+
+    Baked into the projection because the *markdown* consumer — a corpus pasted
+    into a cloud Project — has no clock and cannot compute it. A consumer that
+    does have one MUST re-derive from `staleAfter`, which is why the JSON ships
+    `staleEvaluatedAt` alongside the flag: a projection rebuilds when concepts
+    change, not when dates pass, so the flag ages even though the corpus has not.
+    """
+    try:
+        import okf_check
+    except ImportError:
+        return False
+    return okf_check.is_stale(meta, today)
+
+
 def trust_tier(meta: dict) -> str:
     """Derived trust tier (§5.3), delegated to okf_check so there is one definition.
 
@@ -247,7 +263,7 @@ def updated_at(meta: dict) -> str:
     return str(meta.get("timestamp") or "")
 
 
-def metadata_line(meta: dict) -> str:
+def metadata_line(meta: dict, today: str = "") -> str:
     parts = [f"Type: {meta.get('type', 'Concept')}"]
     # Trust tier is derived from `verified` (§5.3), never stored. Surfaced ahead
     # of confidence because it says who confirmed the concept and when, which is
@@ -263,7 +279,12 @@ def metadata_line(meta: dict) -> str:
     if meta.get("status") and meta["status"] != "stable":
         parts.append(f"Status: {meta['status']}")
     if meta.get("stale_after"):
-        parts.append(f"Stale after: {meta['stale_after']}")
+        # Advisory, never a gate (§5.3, §10.5) — the reader is told, not blocked.
+        # Stated inline because a corpus pasted into a cloud Project has no clock.
+        if today and is_stale(meta, today):
+            parts.append(f"PAST REVIEW HORIZON {meta['stale_after']} (as at {today})")
+        else:
+            parts.append(f"Stale after: {meta['stale_after']}")
     if updated_at(meta):
         parts.append(f"Updated: {updated_at(meta)}")
     return "*{}*".format(" | ".join(parts))
@@ -308,7 +329,8 @@ def compile_projection(root, config, files, generated, log_head, tag=None):
         meta, body = strip_frontmatter(path.read_text(encoding="utf-8"))
         if tag and tag not in parse_tags(meta.get("tags", "")):
             continue
-        entries.append((concept_title(meta, path), metadata_line(meta), meta, body, path))
+        entries.append((concept_title(meta, path), metadata_line(meta, generated[:10]),
+                        meta, body, path))
     entries.sort(key=lambda e: e[0].lower())
 
     sections = [
@@ -457,6 +479,12 @@ def build_structured(root, config, entries, scope, generated, log_head, ontology
                            if isinstance(meta.get("generated"), dict) else "",
             "status": meta.get("status", "") or "stable",
             "staleAfter": str(meta.get("stale_after") or ""),
+            # Advisory signal, never access control (§5.3). `stale` is evaluated
+            # at build time for consumers without a clock; one that has a clock
+            # MUST re-derive from staleAfter, since a projection rebuilds when
+            # concepts change, not when dates pass.
+            "stale": is_stale(meta, generated[:10]),
+            "staleEvaluatedAt": generated[:10],
             "sourcePath": str(path.relative_to(root)),
             "body": body.strip(),
             "citations": extract_citations(body),

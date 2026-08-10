@@ -245,6 +245,55 @@ exactly that failure.
 
 ---
 
+## D12 · Staleness warns; it never gates
+
+**Decision.** A concept past its `stale_after` is **served**, with its date. **V17 is a
+WARNING by construction and must never be promoted to ERROR.** Nothing in this kit refuses
+content on a date.
+
+**Why, from the spec rather than from preference.** §10.5 step 6 reads: *"refuse to display a
+failing attestation; **warn or refuse** when `today >= stale_after`."* Refusal is mandated for
+exactly one thing — a computation that did not run the sanctioned way — and offered as an
+option for staleness. §5.3 is more direct: trust signals are *"advisory signals, not access
+control."* §11's whole posture is permissive consumption.
+
+**Why it matters here and not in the abstract.** These bundles have live consumers. A hard
+refusal on a legal corpus would blank out answers about the Privacy Act on 11 December 2026 —
+the day people most need them — and it would do so because a date passed, not because anything
+was found wrong. A dated answer beats both silence and false confidence.
+
+**Stale is not wrong, and fresh is not right.** A concept can be inaccurate the day it is
+written and accurate a year past its horizon. Staleness schedules a re-check; it is not
+evidence about correctness. That asymmetry is itself the argument against refusing on it.
+
+**Rejected.** A `strict` mode that refuses stale content. It would be used once, block
+something important, and be switched off permanently — the D4 failure shape. Refusal belongs
+with attestation, where a check has actually failed. This corpus has no Attested Computations,
+so nothing in it should currently refuse anything.
+
+**How it fits verification (D11).** Freshness and trust are orthogonal and compose into four
+cells; the dangerous one is **verified + stale**, because the tier reassures while the content
+is out of horizon. That is the cell the warning exists for, and an application finds it with
+`trustTier != "unverified" && stale`. The remedy for staleness is a **new `verified` event**,
+which then justifies moving the horizon forward — so the horizon is the scheduler for the
+verification backlog, turning a flat list into a queue.
+
+**Horizon is a review cycle, not a content date.** Setting `stale_after` to a commencement or
+effective date expires the corpus on one day, makes every answer warn at once, and gets the
+warning switched off. Same shape as D4. Stagger by how fast the material moves.
+
+**On the baked `stale` flag.** The `.json` ships `stale` **and** `staleEvaluatedAt`, and the
+markdown states the horizon inline. The flag exists because the markdown consumer — a corpus
+pasted into a cloud Project — has no clock. A consumer that has one must re-derive from
+`staleAfter`: a projection rebuilds when concepts change, not when dates pass, so the flag ages
+while the corpus does not. Shipping the evaluation date beside the flag is what keeps that
+honest rather than hidden.
+
+**Wrong if.** V17 ever appears at ERROR severity, or a consumer is found withholding a concept
+solely because it is stale.
+
+---
+
 ## Open, deliberately
 
 - **Penalty-table parity.** Removed from `privacy-act-okf`'s deliverable contract: its eight

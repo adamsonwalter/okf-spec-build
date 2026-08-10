@@ -10,7 +10,7 @@ The point is not that an agent audits badly. It is that an agent-run check that
 reports PASS and a check that was never run are indistinguishable afterwards.
 
 Usage:
-    python3 scripts/okf_check.py [bundle_root] [--json] [--quiet]
+    python3 scripts/okf_check.py [bundle_root] [--json] [--quiet] [--today YYYY-MM-DD]
 
 Exit codes:
     0  no ERROR-severity failures (warnings may still be printed)
@@ -27,6 +27,7 @@ before changing a severity, relaxing a guard, or adding a rule.
 from __future__ import annotations
 
 import argparse
+import datetime as _dt
 import json
 import os
 import re
@@ -387,7 +388,7 @@ def load_registries(bundle, findings):
 # Checks
 # ---------------------------------------------------------------------------
 
-def run_checks(bundle):
+def run_checks(bundle, today=None):
     findings = []
     registries = load_registries(bundle, findings)
     concepts = []
@@ -429,7 +430,7 @@ def run_checks(bundle):
 
         concepts.append((path, rel, front, body, concept_type))
 
-    _check_types_and_fields(bundle, registries, concepts, findings)
+    _check_types_and_fields(bundle, registries, concepts, findings, today)
     _check_links(bundle, concepts, findings)
     _check_log(bundle, findings)
     _check_supersession(bundle, concepts, findings)
@@ -528,6 +529,32 @@ def _verification_events(value):
     return []
 
 
+def today_iso():
+    return _dt.date.today().isoformat()
+
+
+def is_stale(front, today=None):
+    """Whether a concept is past its review horizon, per spec §5.5.
+
+    A plain date comparison — `today >= stale_after` — and nothing more. The
+    spec makes the horizon an absolute date precisely so the decision needs no
+    reference to when the concept was written.
+
+    **Advisory, never a gate.** §10.5 mandates refusal for one thing only, a
+    failing attestation, and offers "warn or refuse" for staleness; §5.3 says
+    these signals are "advisory signals, not access control". A stale concept is
+    still served. See docs/DECISIONS.md D12.
+
+    Stale is not wrong: a concept can be inaccurate the day it is written and
+    accurate a year past its horizon. This schedules a re-check; it judges
+    nothing about correctness.
+    """
+    stale_after = front.get("stale_after")
+    if not stale_after or not ISO_DAY.match(str(stale_after)):
+        return False
+    return (today or today_iso()) >= str(stale_after)
+
+
 def trust_tier(front):
     """Derived trust tier, per spec §5.3. Derived on read, never stored."""
     events = _verification_events(front.get("verified"))
@@ -540,8 +567,9 @@ def trust_tier(front):
     return "machine-confirmed"
 
 
-def _check_v02_families(rel, front, findings):
-    """V14 (actor form), V15 (lifecycle shapes), V16 (legacy timestamp)."""
+def _check_v02_families(rel, front, findings, today=None):
+    """V14 (actor form), V15 (lifecycle shapes), V16 (legacy timestamp),
+    V17 (past its review horizon)."""
     # V14 — generated carries an actor in `by`.
     generated = front.get("generated")
     if generated is not None and generated != "":
@@ -602,8 +630,29 @@ def _check_v02_families(rel, front, findings):
                                 "carries the superseded 'timestamp' and no 'generated' "
                                 "— migrate to generated: { by, at } (§5.2, §13.1)"))
 
+    # V17 — past its review horizon. WARNING **by construction**, never an
+    # ERROR: §10.5 offers "warn or refuse" for staleness and mandates refusal
+    # only for a failing attestation, and §5.3 calls these signals advisory
+    # rather than access control. Promoting this to ERROR would take a live
+    # corpus offline on a date rather than on a defect. See D12.
+    if is_stale(front, today):
+        tier = trust_tier(front)
+        detail = (f"last verified {_latest_verification(front) or 'unknown'}; "
+                  f"tier {tier}") if tier != "unverified" else "never verified"
+        findings.append(Finding(
+            WARNING, "V17", rel,
+            f"past its review horizon (stale_after {front['stale_after']}) — "
+            f"{detail}. Advisory: re-verify to clear it, and move the horizon "
+            f"forward. Serving it is correct; serve it with its date."))
 
-def _check_types_and_fields(bundle, registries, concepts, findings):
+
+def _latest_verification(front):
+    ats = [e.get("at") for e in _verification_events(front.get("verified"))
+           if isinstance(e, dict) and e.get("at")]
+    return max((str(a) for a in ats), default=None)
+
+
+def _check_types_and_fields(bundle, registries, concepts, findings, today=None):
     known_types = registries["types"]
     known_tags = registries["tags"]
 
@@ -698,7 +747,7 @@ def _check_types_and_fields(bundle, registries, concepts, findings):
                         f"{low}-{high} declared for tag {tag!r}"))
 
         # V14/V15/V16 — the OKF v0.2 trust and lifecycle families.
-        _check_v02_families(rel, front, findings)
+        _check_v02_families(rel, front, findings, today)
 
         # V8 — the ontology's own frontmatter.
         if rel == "ontology.md":
@@ -1005,6 +1054,9 @@ def main(argv=None):
     parser.add_argument("root", nargs="?", default=".", help="bundle root (default: .)")
     parser.add_argument("--json", action="store_true", help="emit findings as JSON")
     parser.add_argument("--quiet", action="store_true", help="suppress the summary line")
+    parser.add_argument("--today", metavar="YYYY-MM-DD", default=None,
+                        help="evaluate staleness as at this date instead of today — "
+                             "lets you ask what a future date will stale out")
     args = parser.parse_args(argv)
 
     if not os.path.isdir(args.root):
@@ -1016,7 +1068,7 @@ def main(argv=None):
         print(f"error: no .md files under {args.root!r} — not an OKF bundle", file=sys.stderr)
         return 2
 
-    findings, _ = run_checks(bundle)
+    findings, _ = run_checks(bundle, args.today)
     errors = [f for f in findings if f.severity == ERROR]
     warnings = [f for f in findings if f.severity == WARNING]
     skipped = [f for f in findings if f.severity == SKIP]

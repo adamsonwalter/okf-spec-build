@@ -1,5 +1,13 @@
 # Bundle Update Log
 
+## 2026-08-10 (later)
+
+* **Kit**: [scripts/okf_check.py](scripts/okf_check.py) — staleness as a **warning that never gates**. Added `is_stale()` (the §5.5 predicate) and **V17**, WARNING by construction: §10.5 mandates refusal only for a failing attestation and offers "warn or refuse" for staleness, and §5.3 calls the family advisory signals rather than access control. Added `--today YYYY-MM-DD` so a horizon can be chosen against what it will actually stale out, rather than guessed. v2.12.0.
+* **Kit**: [scripts/okf_project.py](scripts/okf_project.py) — the master `.md` states the horizon inline, since a corpus pasted into a cloud Project has no clock; the `.json` ships `staleAfter`, `stale` and `staleEvaluatedAt`. The evaluation date travels with the flag because a projection rebuilds when concepts change, not when dates pass — so a consumer with a clock must re-derive, and now it can tell that it needs to.
+* **Kit**: [ontology.md](ontology.md), [docs/DECISIONS.md](docs/DECISIONS.md) — **D12** records why this stays advisory: a live legal corpus refusing on 11 Dec 2026 would fail on a date rather than a defect, and stale is not wrong (a concept can be inaccurate the day it is written and accurate a year past its horizon). Also records that a **horizon is a review cycle, not a content date** — setting it to a commencement date expires the corpus in one day and gets the warning switched off, the D4 shape — and the freshness × trust matrix whose dangerous cell is *verified + stale*.
+* **Kit**: [tests/test_okf_check.py](tests/test_okf_check.py) — 11 tests including an explicit guard that V17 never appears at ERROR severity. 143 across the kit.
+* **Note**: mechanism only. **No `stale_after` value is set on any concept** in any bundle — that remains open, and deliberately so.
+
 ## 2026-08-10
 
 * **Kit**: [docs/OKF_DIVERGENCE.md](docs/OKF_DIVERGENCE.md) — rewritten against **OKF v0.2**, published 2026-07-24 and superseding the v0.1 this kit was written against. Divergences are now sorted into three classes: superseded-field debt (fix), additive extension (keep — spec §4.1 already requires consumers to tolerate them), and producer-side house rules (keep, but never report as non-conformance). The sort is the point: "migrate to v0.2" read naively deletes the Coverage Ledger, Authority Posture and relationship-marker work, all of which is conformant as-is.

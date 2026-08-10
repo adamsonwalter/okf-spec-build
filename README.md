@@ -81,7 +81,7 @@ Google spec (and why the ontology is our convention, not an OKF requirement), se
 | `archive/` | Superseded concepts (never deleted, always traceable). |
 | `playbook/` | Domain setup and operations guides — **includes `BUNDLE_COMMIT_CHECKLIST.md`**. |
 | `templates/` | Seeds for new bundles — **`log-domain-init.md`** for domain `log.md` on first clone. |
-| `scripts/` | **Executable code, shipped with the kit so every generated bundle has it from day one.** `okf_project.py` builds a bundle's projections; `okf_check.py` runs CHECK_1–CHECK_9 and V1–V16 and exits non-zero; `okf_graph.py` extracts the typed relationship graph. |
+| `scripts/` | **Executable code, shipped with the kit so every generated bundle has it from day one.** `okf_project.py` builds a bundle's projections; `okf_check.py` runs CHECK_1–CHECK_9 and V1–V17 and exits non-zero; `okf_graph.py` extracts the typed relationship graph. |
 | `tests/` | Tests for `scripts/`. `python3 -m unittest discover -s tests`. |
 | `.github/workflows/` | CI. `conformance.yml` checks this kit; `bundle-conformance.yml` is the copy a generated bundle uses against its `okf-kit/` submodule. |
 | `docs/OPERATING.md` | **How the kit and its bundles fit together day to day** — what to pull, when, and what breaks if you don't. |
@@ -264,7 +264,7 @@ If you need to override agent behavior for a specific project, add a `PROJECT_OV
 | Component | Version |
 |---|---|
 | OKF Spec | 0.2 |
-| Bundle Bootstrap Kit | 2.11.0 |
+| Bundle Bootstrap Kit | 2.12.0 |
 | Ontology | 1.0 |
 | Last updated | 2026-08-10 |
 

@@ -1,0 +1,39 @@
+name: bundle-conformance (reusable)
+
+# Drop this into a bundle that carries the kit at okf-kit/ (submodule) and it
+# runs the same checks the kit runs on itself.
+
+on:
+  workflow_call:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Kit present
+        run: test -f okf-kit/scripts/okf_check.py
+
+      - name: Rebuild projections
+        run: python3 okf-kit/scripts/okf_project.py . --quiet
+
+      - name: Projections are up to date
+        run: |
+          if ! git diff --quiet -- projections; then
+            echo "::error::projections/ is stale — run ./check.command and commit"
+            git diff --stat -- projections
+            exit 1
+          fi
+
+      - name: Bundle conformance
+        run: python3 okf-kit/scripts/okf_check.py .

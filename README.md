@@ -83,6 +83,7 @@ Google spec (and why the ontology is our convention, not an OKF requirement), se
 | `templates/` | Seeds for new bundles — **`log-domain-init.md`** for domain `log.md` on first clone. |
 | `scripts/` | **Executable code, shipped with the kit so every generated bundle has it from day one.** `okf_project.py` builds a bundle's projections; `okf_check.py` runs CHECK_1–CHECK_9 and V1–V12 and exits non-zero; `okf_graph.py` extracts the typed relationship graph. |
 | `tests/` | Tests for `scripts/`. `python3 -m unittest discover -s tests`. |
+| `.github/workflows/` | CI. `conformance.yml` checks this kit; `bundle-conformance.yml` is the copy a generated bundle uses against its `okf-kit/` submodule. |
 | `docs/DECISIONS.md` | **Read before changing a check.** Why each rule is shaped the way it is, what was rejected, and the measurements behind it. |
 
 ---

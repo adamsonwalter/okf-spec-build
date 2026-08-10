@@ -15,3 +15,5 @@ _lock_*
 # Local session overrides (project-specific, not for sharing)
 LOCAL_OVERRIDES.MD
 *.command
+__pycache__/
+*.pyc

@@ -1,0 +1,46 @@
+name: conformance
+
+# The checks exist so a check that did not run and a check that passed never
+# look the same afterwards. Running them only when someone remembers to would
+# reintroduce exactly that ambiguity, one level up.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # Stdlib only, by design — no install step, and nothing to drift.
+      - name: Tests
+        run: python3 -m unittest discover -s tests -v
+
+      - name: Bundle conformance
+        run: python3 scripts/okf_check.py .
+
+      - name: Relationship graph
+        run: python3 scripts/okf_graph.py .
+
+      # A bundle's projections must match its concepts. Rebuilding and finding a
+      # diff means someone committed concepts without regenerating.
+      - name: Projections are up to date
+        run: |
+          if [ -d projections ] && [ -n "$(ls -A projections 2>/dev/null | grep -v README)" ]; then
+            python3 scripts/okf_project.py . --quiet
+            if ! git diff --quiet -- projections; then
+              echo "::error::projections/ is stale — run scripts/okf_project.py and commit"
+              git diff --stat -- projections
+              exit 1
+            fi
+          else
+            echo "no projections in this bundle — nothing to compare"
+          fi

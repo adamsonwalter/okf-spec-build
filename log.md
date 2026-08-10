@@ -2,6 +2,13 @@
 
 ## 2026-08-09
 
+* **Kit**: [scripts/okf_project.py](scripts/okf_project.py) — new, and the gap it closes is the largest one found: the kit shipped no projection builder at all. The implementation lived only inside one target bundle, so every other bundle generated from this kit had no way to produce a master file. Now bundle-agnostic — slug, title, schema id and tag slices are read from a `# Projection` section in the bundle's own ontology, defaulting from the directory when absent. The JSON gains `edges`, so the relationship graph ships with the knowledge instead of being a separate command; an absent graph is reported with a reason rather than as an empty list.
+* **Kit**: [tests/test_okf_project.py](tests/test_okf_project.py) — 15 tests building synthetic bundles in temp directories, so generality is asserted rather than assumed. 93 across the kit.
+* **Kit**: [README.md](README.md), [AGENTS.MD](AGENTS.MD) — registered the builder and told PROJECTION_AGENT to run the kit's script rather than write a per-bundle one, since that duplication is what caused the drift.
+* **Kit**: [CHANGELOG.md](CHANGELOG.md) — v2.8.0.
+
+## 2026-08-09
+
 * **Kit**: [ontology.md](ontology.md) — v0.7 → v0.8. §Deliverable Parity Contracts gains `Record pattern` and `Source key pattern`, the machine-readable form of the `Identity key` column that was previously prose only. CHECK_7 becomes a real two-way set diff; without a `Record pattern` it reports SKIP and never PASS, because filename matching cannot see an orphan record. The kit stays format-agnostic — the contract declares how to read a hand-authored artifact rather than the kit guessing at HTML or JSON.
 * **Kit**: [scripts/okf_check.py](scripts/okf_check.py) — CHECK_7 rewritten as a diff naming what is missing on each side. A clean diff is now a silent pass rather than a SKIP, which had said "could not decide" about the one case where it fully did. Guardrails for a pattern that matches nothing, an invalid regex, a multi-group pattern, and a source title with no extractable identity key.
 * **Kit**: [docs/DECISIONS.md](docs/DECISIONS.md) — new. Ten decisions behind the two scripts, each with the measurement that drove it, what was rejected, and how to tell if it was wrong. Cross-referenced from both script docstrings, README.md and AGENTS.MD so a reviewer meets it before changing a severity or relaxing a guard.

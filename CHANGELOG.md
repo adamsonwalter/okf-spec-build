@@ -8,6 +8,41 @@ Format: [Semantic Versioning](https://semver.org) — MAJOR.MINOR.PATCH
 
 ---
 
+## [2.8.0] — 2026-08-09
+
+### Added — the kit can finally build a bundle's projections
+
+`scripts/okf_project.py`. Until now the kit shipped **no projection builder at all**: the
+implementation lived only inside one target bundle, written there and never sent back
+upstream. Every other bundle generated from this kit had no way to produce a master file —
+the generator did not ship the one script every bundle needs.
+
+- Bundle-agnostic. Slug, title, schema id and pre-built tag slices are read from a
+  `# Projection` section in the bundle's own `ontology.md`; absent, they default from the
+  directory name and the ontology's title, so a freshly cloned bundle builds unconfigured.
+- **The JSON now carries `edges`** — the typed relationship graph alongside the concepts. An
+  application consuming the master file previously got concepts and no connections, and would
+  have had to infer relationships back out of prose, which is where errors enter. An absent
+  graph is reported as `edges: null` with a reason, never as an empty list: "no graph shipped"
+  and "no relationships exist" must not look the same.
+- Ontology rows now carry `requiredSections`, `requiredFields` and `certaintyBand`, so the
+  v0.4–v0.7 registry work reaches consumers.
+- Keeps the artefact-conformance check: every artefact written must be registered in
+  `AGENTS.MD`, and every artefact registered must be written.
+
+**Verified as a faithful port**, not a rewrite. Run against the reference bundle it produced
+the same 104 concepts and the same eight tag slices, with **zero existing values changed** —
+the only differences were the added `edges` and the three added ontology fields. Then run
+against a bundle it had never seen (this kit), it produced projections with no configuration
+at all, and the conformance check correctly rejected them as unregistered.
+
+### Added
+
+- `tests/test_okf_project.py` — 15 tests building synthetic bundles in temp directories, so
+  generality is asserted rather than assumed. **93 across the kit.**
+
+---
+
 ## [2.7.0] — 2026-08-09
 
 ### Added — CHECK_7 is a real set diff (ontology v0.7 → v0.8)

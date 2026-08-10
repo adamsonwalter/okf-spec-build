@@ -81,7 +81,7 @@ Google spec (and why the ontology is our convention, not an OKF requirement), se
 | `archive/` | Superseded concepts (never deleted, always traceable). |
 | `playbook/` | Domain setup and operations guides — **includes `BUNDLE_COMMIT_CHECKLIST.md`**. |
 | `templates/` | Seeds for new bundles — **`log-domain-init.md`** for domain `log.md` on first clone. |
-| `scripts/` | **Executable checks.** `okf_check.py` runs CHECK_1–CHECK_9 and V1–V11 in code and exits non-zero; `okf_graph.py` extracts the typed relationship graph from `# Related` sections. Shipped with the kit, so every generated bundle has both from day one. |
+| `scripts/` | **Executable code, shipped with the kit so every generated bundle has it from day one.** `okf_project.py` builds a bundle's projections; `okf_check.py` runs CHECK_1–CHECK_9 and V1–V12 and exits non-zero; `okf_graph.py` extracts the typed relationship graph. |
 | `tests/` | Tests for `scripts/`. `python3 -m unittest discover -s tests`. |
 | `docs/DECISIONS.md` | **Read before changing a check.** Why each rule is shaped the way it is, what was rejected, and the measurements behind it. |
 
@@ -167,7 +167,18 @@ Run the checks yourself, in code:
 python3 scripts/okf_check.py .
 ```
 
-Dump the relationship graph on its own — edge counts by type, or JSON for an application:
+Build a bundle's projections — the master `.md` for a cloud Project, and the typed `.json`
+(concepts **and** the relationship graph) for an application:
+
+```bash
+python3 scripts/okf_project.py .
+```
+
+Bundle slug, title, schema id and pre-built tag slices are read from a `# Projection` section
+in that bundle's own `ontology.md`. With no such section it still builds, using the directory
+name and the ontology's title — so a freshly cloned bundle produces projections unconfigured.
+
+Dump the relationship graph on its own — edge counts by type, or JSON:
 
 ```bash
 python3 scripts/okf_graph.py . --json

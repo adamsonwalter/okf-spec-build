@@ -483,6 +483,11 @@ ACTION:
 
       python3 scripts/okf_graph.py . --json
 
+  To rebuild projections (STATE I7), run the kit's builder rather than writing a
+  per-bundle script — that duplication is why bundles drifted from the kit:
+
+      python3 <kit>/scripts/okf_project.py .
+
   Before changing a severity, relaxing a guard or adding a rule, read
   docs/DECISIONS.md — several of these were settled against measured evidence and
   should not be re-litigated from first principles.

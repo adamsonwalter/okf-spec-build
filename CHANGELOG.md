@@ -8,6 +8,66 @@ Format: [Semantic Versioning](https://semver.org) — MAJOR.MINOR.PATCH
 
 ---
 
+## [2.11.0] — 2026-08-10
+
+### Changed — the kit targets OKF v0.2 (ontology v0.9 → v1.0)
+
+**OKF v0.2 was published on 2026-07-24** (`GoogleCloudPlatform/knowledge-catalog` PR #227)
+and supersedes v0.1, which this kit was written against. v0.2 is not purely additive: §13.1
+retires the bare `timestamp` key in favour of `generated: { by, at }`, retires the `# Citations`
+body list in favour of the `sources` frontmatter family, and conformance moves from §9 to §11.
+
+Divergences were **sorted before being migrated**, because "move to v0.2" reads like one job
+and is three with opposite right answers — see `docs/DECISIONS.md` D11 and the rewritten
+`docs/OKF_DIVERGENCE.md`:
+
+- **Class A, debt** — superseded fields and moved section references. Fixed.
+- **Class B, additive extension** — Coverage Ledgers, Authority Posture, the relationship
+  markers, Parity Contracts. Spec §4.1 requires consumers to tolerate unknown keys and unknown
+  `type` values, so these are **already conformant** and were left alone. The naive reading of
+  "migrate to the spec" deletes them for no reason.
+- **Class C, house rules** — five required frontmatter fields, closed type vocabulary. Kept,
+  with one new constraint: strictness must be additive, never a redefinition. The checker may
+  report a bundle as outside this kit's dialect; it must never report a spec-conformant bundle
+  as non-conformant.
+
+### Added
+
+- `ontology.md` §Spec Field Families: the actor convention (§7), `generated` / `verified`
+  (§5.2), **derived trust tiers** (§5.3), `status` / `stale_after` (§5.4–5.5), and `sources`
+  with keyed footnote attribution (§5.1).
+- **V14** (ERROR) — `generated` / `verified` name an actor in `human:` / `process:` /
+  `<producer>/<version>` form, and `generated` carries `by`.
+- **V15** (ERROR) — `status` is one of draft/stable/deprecated; `stale_after` is `YYYY-MM-DD`.
+- **V16** (WARNING) — the concept still carries the superseded `timestamp` and no `generated`.
+  A warning, not an error, because §13.1 permits the legacy fallback; migration debt stays
+  visible and counted instead of silently passing. Measured on `privacy-act-okf`: **116**.
+- `trust_tier()` in `okf_check.py`, derived per §5.3 and never stored.
+
+### Fixed — the frontmatter parser could not read v0.2 and did not say so
+
+`split_frontmatter` was flat and line-based. A block sequence (`verified:` then indented
+`- { … }`) parsed into junk keys such as `- { by` with **no error reported**, which breaks the
+parser's own stated contract — "anything not understood is reported, never skipped". Since
+`sources` is a list of mappings (§5.1) and `verified` a list of events (§5.2), no v0.2 rule
+could have been trusted on top of it.
+
+Now parses nested block mappings and block sequences of flow mappings, splits on top-level
+commas only (so `resource: https://…` and `by: human:x` survive), and **raises rather than
+guesses** on a shape it does not read. Verified no behaviour change downstream: projection
+output for `privacy-act-okf` is byte-identical apart from its generation stamp.
+
+### Notes
+
+- V9 now accepts `generated` **or** the legacy `timestamp`, so the corpus migrates without a
+  flag day.
+- Tests: 109 → **129**, covering nested parsing, the §5.2 bare-mapping rule, trust-tier
+  derivation, and the false-negative side of V14/V15/V16.
+- Earlier `2.10.0` and `2.10.1` shipped without CHANGELOG entries; the version table in
+  `README.md` had also stalled at 2.3.0. Both corrected here.
+
+---
+
 ## [2.9.0] — 2026-08-09
 
 ### Added — Authority Posture (ontology v0.8 → v0.9)

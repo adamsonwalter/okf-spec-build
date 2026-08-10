@@ -629,6 +629,124 @@ class TestNestedBundles(BundleFixture):
         self.assertNotIn("V1", [f.check for f in K.run_checks(bundle)[0]])
 
 
+class TestFrontmatterNesting(unittest.TestCase):
+    """OKF v0.2 needs nesting: sources is a list of mappings (§5.1), verified a
+    list of {by, at} events (§5.2). The old flat parser turned a block sequence
+    into junk keys with no error, which is the one thing it promises not to do.
+    """
+
+    def parse(self, frontmatter):
+        return K.split_frontmatter("---\ntype: X\n" + frontmatter + "\n---\nbody\n")
+
+    def test_block_sequence_of_flow_mappings(self):
+        fm, _, err = self.parse(
+            "verified:\n"
+            "  - { by: human:adamson, at: 2026-07-29T00:00:00Z }\n"
+            "  - { by: process:claim-audit, at: 2026-07-29T00:00:00Z }")
+        self.assertIsNone(err)
+        self.assertEqual([e["by"] for e in fm["verified"]],
+                         ["human:adamson", "process:claim-audit"])
+
+    def test_colons_inside_a_flow_mapping_survive(self):
+        # 'resource: https://…' and 'by: human:x' both carry a second colon.
+        fm, _, err = self.parse(
+            "sources:\n  - { id: a, resource: https://oaic.gov.au/x }")
+        self.assertIsNone(err)
+        self.assertEqual(fm["sources"][0]["resource"], "https://oaic.gov.au/x")
+
+    def test_nested_block_mapping(self):
+        fm, _, err = self.parse("executor:\n  resource: refs/run.md\n  receipt: [job_id]")
+        self.assertIsNone(err)
+        self.assertEqual(fm["executor"], {"resource": "refs/run.md",
+                                          "receipt": ["job_id"]})
+
+    def test_body_is_not_swallowed(self):
+        fm, body, err = self.parse("verified:\n  - { by: human:a, at: 2026-01-01 }")
+        self.assertIsNone(err)
+        self.assertEqual(body.strip(), "body")
+
+    def test_unreadable_nesting_is_reported_not_dropped(self):
+        _, _, err = self.parse("verified:\n  - by: human:a\n    at: 2026-01-01")
+        self.assertIsNotNone(err)
+        self.assertIn("nests under a list item", err)
+
+    def test_flat_frontmatter_still_parses(self):
+        fm, _, err = self.parse("title: T\ntags: [a, b]\nconfidence: 0.9")
+        self.assertIsNone(err)
+        self.assertEqual((fm["title"], fm["tags"], fm["confidence"]),
+                         ("T", ["a", "b"], 0.9))
+
+
+class TestTrustTiers(unittest.TestCase):
+    """Spec §5.3. Derived on read, never stored."""
+
+    def test_absent_verified_is_unverified(self):
+        self.assertEqual(K.trust_tier({}), "unverified")
+
+    def test_non_human_actors_are_machine_confirmed(self):
+        self.assertEqual(
+            K.trust_tier({"verified": [{"by": "process:nightly", "at": "x"}]}),
+            "machine-confirmed")
+
+    def test_any_human_actor_wins(self):
+        self.assertEqual(
+            K.trust_tier({"verified": [{"by": "process:nightly", "at": "x"},
+                                       {"by": "human:adamson", "at": "x"}]}),
+            "human-reviewed")
+
+    def test_bare_mapping_is_a_one_element_list(self):
+        # §5.2 requires a consumer to read this form; it is not a convenience.
+        self.assertEqual(
+            K.trust_tier({"verified": {"by": "human:adamson", "at": "x"}}),
+            "human-reviewed")
+
+
+class TestV02Families(unittest.TestCase):
+    def findings(self, front):
+        out = []
+        K._check_v02_families("t.md", front, out)
+        return {(f.check, f.severity) for f in out}
+
+    def test_clean_v02_frontmatter_is_silent(self):
+        self.assertEqual(self.findings({
+            "generated": {"by": "enrichment_agent/claude-opus-5", "at": "2026-01-01"},
+            "verified": {"by": "human:adamson", "at": "2026-01-01"},
+            "status": "stable", "stale_after": "2026-12-10"}), set())
+
+    def test_bare_name_is_not_an_actor(self):
+        self.assertIn(("V14", K.ERROR),
+                      self.findings({"generated": {"by": "Walter", "at": "x"}}))
+
+    def test_generated_without_by_fails(self):
+        self.assertIn(("V14", K.ERROR), self.findings({"generated": {"at": "x"}}))
+
+    def test_generated_as_a_scalar_fails(self):
+        self.assertIn(("V14", K.ERROR), self.findings({"generated": "2026-01-01"}))
+
+    def test_verified_actor_is_checked_too(self):
+        self.assertIn(("V14", K.ERROR),
+                      self.findings({"verified": [{"by": "someone", "at": "x"}]}))
+
+    def test_unknown_status_fails(self):
+        self.assertIn(("V15", K.ERROR), self.findings({"status": "published"}))
+
+    def test_each_valid_status_passes(self):
+        for status in ("draft", "stable", "deprecated"):
+            self.assertEqual(self.findings({"status": status}), set())
+
+    def test_stale_after_must_be_a_plain_date(self):
+        self.assertIn(("V15", K.ERROR), self.findings({"stale_after": "Dec 2026"}))
+
+    def test_legacy_timestamp_warns_but_does_not_fail(self):
+        self.assertEqual(self.findings({"timestamp": "2026-01-01"}),
+                         {("V16", K.WARNING)})
+
+    def test_generated_silences_the_legacy_warning(self):
+        self.assertEqual(self.findings({
+            "timestamp": "2026-01-01",
+            "generated": {"by": "human:adamson", "at": "2026-01-01"}}), set())
+
+
 class TestCellParsing(unittest.TestCase):
     def test_path_globs_pulls_every_path_from_a_prose_cell(self):
         cell = ("`scenarios/scenario-*.md` (one row per file); "

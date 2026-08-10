@@ -72,7 +72,13 @@ class Finding:
 # ---------------------------------------------------------------------------
 
 def split_frontmatter(text):
-    """Return (frontmatter_dict_or_None, body, error_or_None)."""
+    """Return (frontmatter_dict_or_None, body, error_or_None).
+
+    Handles the nesting OKF v0.2 needs: `sources` is a list of mappings (§5.1)
+    and `verified` is a list of `{by, at}` events (§5.2). The previous parser was
+    flat, so a block sequence turned into junk keys (`- { by`) with no error —
+    silent misreading, which is the one thing this parser promises not to do.
+    """
     if not text.startswith("---"):
         return None, text, None                      # no frontmatter at all
     end = text.find("\n---", 3)
@@ -80,21 +86,77 @@ def split_frontmatter(text):
         return None, text, "frontmatter block is never closed"
     raw = text[3:end].strip("\n")
     body = text[end + 4:]
-    data = {}
-    for line in raw.split("\n"):
+
+    lines = []
+    for lineno, line in enumerate(raw.split("\n"), start=1):
         if not line.strip() or line.lstrip().startswith("#"):
             continue
-        if ":" not in line:
-            return None, body, f"frontmatter line is not 'key: value': {line.strip()!r}"
-        key, _, value = line.partition(":")
-        data[key.strip()] = _scalar(value.strip())
+        lines.append((len(line) - len(line.lstrip(" ")), line.strip(), lineno))
+
+    try:
+        data, consumed = _parse_block(lines, 0, lines[0][0] if lines else 0)
+    except _FrontmatterError as exc:
+        return None, body, str(exc)
+    if consumed != len(lines):
+        return None, body, (f"frontmatter line {lines[consumed][2]} has unexpected "
+                            f"indentation: {lines[consumed][1]!r}")
     return data, body, None
 
 
+class _FrontmatterError(Exception):
+    pass
+
+
+def _parse_block(lines, i, indent):
+    """Parse a mapping or sequence at `indent`. Returns (value, next_index)."""
+    if i < len(lines) and lines[i][1].startswith("- "):
+        items = []
+        while i < len(lines) and lines[i][0] == indent and lines[i][1].startswith("- "):
+            items.append(_scalar(lines[i][1][2:].strip()))
+            i += 1
+            # A deeper block under a `- ` item is not something this dialect
+            # writes; refuse it rather than drop it.
+            if i < len(lines) and lines[i][0] > indent:
+                raise _FrontmatterError(
+                    f"frontmatter line {lines[i][2]} nests under a list item, which "
+                    f"this parser does not read: {lines[i][1]!r}")
+        return items, i
+
+    data = {}
+    while i < len(lines) and lines[i][0] == indent:
+        _, content, lineno = lines[i]
+        if ":" not in content:
+            raise _FrontmatterError(
+                f"frontmatter line {lineno} is not 'key: value': {content!r}")
+        key, _, value = content.partition(":")
+        key, value = key.strip(), value.strip()
+        i += 1
+        if value:
+            data[key] = _scalar(value)
+            continue
+        # Empty value: either a nested block below, or a genuinely empty scalar.
+        if i < len(lines) and lines[i][0] > indent:
+            data[key], i = _parse_block(lines, i, lines[i][0])
+        else:
+            data[key] = ""
+    return data, i
+
+
 def _scalar(value):
+    if value.startswith("{") and value.endswith("}"):
+        inner = value[1:-1].strip()
+        if not inner:
+            return {}
+        out = {}
+        for part in _split_top_level(inner):
+            k, sep, v = part.partition(":")
+            if not sep:
+                return value            # not a mapping we understand; keep raw
+            out[k.strip()] = _scalar(v.strip())
+        return out
     if value.startswith("[") and value.endswith("]"):
         inner = value[1:-1].strip()
-        return [v.strip().strip("\"'") for v in inner.split(",") if v.strip()] if inner else []
+        return [_scalar(v.strip()) for v in _split_top_level(inner)] if inner else []
     if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
         return value[1:-1]
     if re.fullmatch(r"-?\d+", value):
@@ -102,6 +164,29 @@ def _scalar(value):
     if re.fullmatch(r"-?\d*\.\d+", value):
         return float(value)
     return value
+
+
+def _split_top_level(text):
+    """Split on commas that are not inside nested brackets or quotes."""
+    parts, depth, quote, current = [], 0, None, []
+    for ch in text:
+        if quote:
+            if ch == quote:
+                quote = None
+        elif ch in "\"'":
+            quote = ch
+        elif ch in "{[":
+            depth += 1
+        elif ch in "}]":
+            depth -= 1
+        elif ch == "," and depth == 0:
+            parts.append("".join(current))
+            current = []
+            continue
+        current.append(ch)
+    if current:
+        parts.append("".join(current))
+    return [p.strip() for p in parts if p.strip()]
 
 
 def parse_tables(text):
@@ -416,6 +501,100 @@ def _check_authority_posture(bundle, edges, findings):
                 f"'references' edge rather than a load-bearing one"))
 
 
+ACTOR = re.compile(r"^(?:human:\S+|process:\S+|[A-Za-z0-9._-]+/\S+)$")
+STATUSES = {"draft", "stable", "deprecated"}
+ISO_DAY = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+
+def _verification_events(value):
+    """`verified` as a list of events. A bare mapping is a one-element list.
+
+    Spec §5.2 requires a consumer to read a bare `{by, at}` mapping as a
+    one-element list, so this is the one shape normalisation the checker owes
+    the format rather than a convenience.
+    """
+    if isinstance(value, dict):
+        return [value]
+    if isinstance(value, list):
+        return value
+    return []
+
+
+def trust_tier(front):
+    """Derived trust tier, per spec §5.3. Derived on read, never stored."""
+    events = _verification_events(front.get("verified"))
+    if not events:
+        return "unverified"
+    for event in events:
+        by = event.get("by") if isinstance(event, dict) else None
+        if isinstance(by, str) and by.startswith("human:"):
+            return "human-reviewed"
+    return "machine-confirmed"
+
+
+def _check_v02_families(rel, front, findings):
+    """V14 (actor form), V15 (lifecycle shapes), V16 (legacy timestamp)."""
+    # V14 — generated carries an actor in `by`.
+    generated = front.get("generated")
+    if generated is not None and generated != "":
+        if not isinstance(generated, dict):
+            findings.append(Finding(ERROR, "V14", rel,
+                                    "'generated' must be a mapping with 'by' and 'at' "
+                                    "(§5.2) — write generated: { by: ..., at: ... }"))
+        else:
+            by = generated.get("by")
+            if not by:
+                findings.append(Finding(ERROR, "V14", rel,
+                                        "'generated' is missing 'by' (§5.2)"))
+            elif not ACTOR.match(str(by)):
+                findings.append(Finding(ERROR, "V14", rel,
+                                        f"'generated.by' {by!r} is not an actor — use "
+                                        f"'human:<id>', 'process:<id>' or "
+                                        f"'<producer>/<version>' (§7)"))
+
+    # V14 — every verification event carries an actor.
+    verified = front.get("verified")
+    if verified is not None and verified != "":
+        events = _verification_events(verified)
+        if not events:
+            findings.append(Finding(ERROR, "V14", rel,
+                                    "'verified' must be a {by, at} mapping or a list "
+                                    "of them (§5.2)"))
+        for event in events:
+            if not isinstance(event, dict):
+                findings.append(Finding(ERROR, "V14", rel,
+                                        f"'verified' entry {event!r} is not a "
+                                        f"{{by, at}} mapping (§5.2)"))
+                continue
+            by = event.get("by")
+            if not by:
+                findings.append(Finding(ERROR, "V14", rel,
+                                        "a 'verified' entry is missing 'by' (§5.2)"))
+            elif not ACTOR.match(str(by)):
+                findings.append(Finding(ERROR, "V14", rel,
+                                        f"'verified[].by' {by!r} is not an actor (§7)"))
+
+    # V15 — lifecycle field shapes.
+    status = front.get("status")
+    if status and status not in STATUSES:
+        findings.append(Finding(ERROR, "V15", rel,
+                                f"status {status!r} is not one of "
+                                f"{sorted(STATUSES)} (§5.4)"))
+    stale_after = front.get("stale_after")
+    if stale_after and not ISO_DAY.match(str(stale_after)):
+        findings.append(Finding(ERROR, "V15", rel,
+                                f"stale_after {stale_after!r} is not a YYYY-MM-DD "
+                                f"date (§5.5)"))
+
+    # V16 — still on the superseded key. A warning, not an error: §13.1 lets a
+    # consumer fall back to a legacy timestamp, so this is migration debt that
+    # stays visible rather than a broken concept.
+    if not front.get("generated") and front.get("timestamp"):
+        findings.append(Finding(WARNING, "V16", rel,
+                                "carries the superseded 'timestamp' and no 'generated' "
+                                "— migrate to generated: { by, at } (§5.2, §13.1)"))
+
+
 def _check_types_and_fields(bundle, registries, concepts, findings):
     known_types = registries["types"]
     known_tags = registries["tags"]
@@ -430,10 +609,17 @@ def _check_types_and_fields(bundle, registries, concepts, findings):
             spec = known_types.get(concept_type, {"required_fields": [], "required_sections": []})
 
         # V9 — universal frontmatter, plus this type's declared requirements.
-        for field in ("title", "description", "timestamp", "tags"):
+        # 'generated' supersedes 'timestamp' (spec §5.2, §13.1). Either satisfies
+        # V9 while the corpus migrates; V16 below marks the ones still on the
+        # legacy key, so "migrated" and "not yet migrated" stay distinguishable.
+        for field in ("title", "description", "tags"):
             if not front.get(field):
                 findings.append(Finding(ERROR, "V9", rel,
                                         f"missing required frontmatter field {field!r}"))
+        if not front.get("generated") and not front.get("timestamp"):
+            findings.append(Finding(ERROR, "V9", rel,
+                                    "missing required frontmatter field 'generated' "
+                                    "(or the legacy 'timestamp' it supersedes)"))
         for field in spec["required_fields"]:
             if not front.get(field):
                 findings.append(Finding(ERROR, "V9", rel,
@@ -502,6 +688,9 @@ def _check_types_and_fields(bundle, registries, concepts, findings):
                         WARNING, "V12", rel,
                         f"confidence {confidence} is outside the band "
                         f"{low}-{high} declared for tag {tag!r}"))
+
+        # V14/V15/V16 — the OKF v0.2 trust and lifecycle families.
+        _check_v02_families(rel, front, findings)
 
         # V8 — the ontology's own frontmatter.
         if rel == "ontology.md":

@@ -202,6 +202,49 @@ A checker that cries wolf teaches authors to ignore it.
 
 ---
 
+## D11 · Track OKF v0.2; sort divergences before migrating them
+
+**Decision.** The kit targets **OKF v0.2** (published 2026-07-24, supersedes v0.1 per its
+§13). Every divergence is sorted into one of three classes before anything is changed, and
+only one class is a defect. Full register in `docs/OKF_DIVERGENCE.md`.
+
+| Class | Meaning | Action |
+|---|---|---|
+| **A** — superseded-field debt | We write a field the spec retired (`timestamp`, `# Citations`) or cite a section that moved (§9 → §11) | Fix |
+| **B** — additive extension | New key or new `type`; §4.1 requires consumers to tolerate both | Keep — already conformant |
+| **C** — producer-side strictness | We require more than the spec (5 required fields, closed type vocabulary) | Keep as house rules; never report as conformance |
+
+**Why sorting comes first.** "Migrate to v0.2" reads like one job and is three, with
+opposite correct answers. Class B needs no work at all — the spec's extension clause
+already covers Coverage Ledgers, Authority Posture and the relationship markers, so
+"migrating" them would mean deleting capability for no reason. Class C needs no work
+either, only a wording discipline. Without the sort, the natural move is to strip the
+dialect back to the spec floor and lose the only parts of this kit that are unique.
+
+**The constraint that makes Class C safe.** Strictness must be additive, never a
+redefinition. A rule requiring more than §11 is a house rule; a rule rejecting something
+§11 declares conformant makes this a different format. `okf_check.py` may report a bundle
+as outside our dialect. It must not report a spec-conformant bundle as non-conformant.
+
+**On `confidence` (D4, D5, D7).** v0.2 §5.1 declines to store a credibility score by name —
+"subjective, unportable across consumers, and goes stale" — and answers the same question
+with a trust tier *derived* from `verified` (§5.3). That is the stronger design: a tier
+names who confirmed the concept and when, and cannot drift from what happened, whereas
+`confidence: 0.9` is a number nothing regenerates. Trust tiers become primary. The certainty
+*tags* survive on their own merits, because how settled a **claim** is and who verified the
+**document** are different questions — which is exactly what D5 measured.
+
+**Not done by guessing.** `timestamp` → `generated.at` is a mechanical rename.
+`generated.by` and `verified` are not: they assert who produced and who confirmed each
+concept. D4's constraint governs here too — a reader must be able to explain why they are
+not seeing something, and 116 files given a plausible-looking verifier they never had is
+exactly that failure.
+
+**Wrong if.** A spec-conformant bundle from a third party fails `okf_check.py` as
+"non-conformant" rather than as "outside this kit's dialect".
+
+---
+
 ## Open, deliberately
 
 - **Penalty-table parity.** Removed from `privacy-act-okf`'s deliverable contract: its eight

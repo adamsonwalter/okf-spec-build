@@ -1,6 +1,6 @@
 # OKF Bundle Bootstrap Kit
 
-**Open Knowledge Format v0.1 — Self-maintaining knowledge bundle for AI agent projects**
+**Open Knowledge Format v0.2 — Self-maintaining knowledge bundle for AI agent projects**
 
 **Source:** [github.com/adamsonwalter/okf-spec-build](https://github.com/adamsonwalter/okf-spec-build)
 
@@ -13,7 +13,7 @@ Drop this into any Claude Cowork (or compatible AI agent) project to get a fully
 An operating system that turns any project folder into a compounding knowledge base. Agents read the instruction files, build and maintain OKF-compliant markdown concept files, cross-link them into a knowledge graph, and keep everything current as new inputs arrive. The lean core handles most domains; an opt-in `optional/` layer adds confidence/memory machinery for liability-grade work.
 
 Based on:
-- [Google Cloud Open Knowledge Format v0.1](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md)
+- [Google Cloud Open Knowledge Format v0.2](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md)
 - Andrej Karpathy's LLM Wiki pattern (2026)
 
 ---
@@ -81,7 +81,7 @@ Google spec (and why the ontology is our convention, not an OKF requirement), se
 | `archive/` | Superseded concepts (never deleted, always traceable). |
 | `playbook/` | Domain setup and operations guides — **includes `BUNDLE_COMMIT_CHECKLIST.md`**. |
 | `templates/` | Seeds for new bundles — **`log-domain-init.md`** for domain `log.md` on first clone. |
-| `scripts/` | **Executable code, shipped with the kit so every generated bundle has it from day one.** `okf_project.py` builds a bundle's projections; `okf_check.py` runs CHECK_1–CHECK_9 and V1–V12 and exits non-zero; `okf_graph.py` extracts the typed relationship graph. |
+| `scripts/` | **Executable code, shipped with the kit so every generated bundle has it from day one.** `okf_project.py` builds a bundle's projections; `okf_check.py` runs CHECK_1–CHECK_9 and V1–V16 and exits non-zero; `okf_graph.py` extracts the typed relationship graph. |
 | `tests/` | Tests for `scripts/`. `python3 -m unittest discover -s tests`. |
 | `.github/workflows/` | CI. `conformance.yml` checks this kit; `bundle-conformance.yml` is the copy a generated bundle uses against its `okf-kit/` submodule. |
 | `docs/OPERATING.md` | **How the kit and its bundles fit together day to day** — what to pull, when, and what breaks if you don't. |
@@ -183,7 +183,7 @@ Printable checklist: `playbook/BUNDLE_COMMIT_CHECKLIST.md`. Domain log seed:
 
 ## OKF Conformance
 
-This kit produces bundles conformant with OKF v0.1 (§9):
+This kit produces bundles conformant with OKF v0.2 (§11):
 
 - ✅ Every concept `.md` has parseable YAML frontmatter
 - ✅ Every frontmatter has a non-empty `type` field
@@ -263,9 +263,10 @@ If you need to override agent behavior for a specific project, add a `PROJECT_OV
 
 | Component | Version |
 |---|---|
-| OKF Spec | 0.1 |
-| Bundle Bootstrap Kit | 2.3.0 |
-| Last updated | 2026-07-03 |
+| OKF Spec | 0.2 |
+| Bundle Bootstrap Kit | 2.11.0 |
+| Ontology | 1.0 |
+| Last updated | 2026-08-10 |
 
 ---
 

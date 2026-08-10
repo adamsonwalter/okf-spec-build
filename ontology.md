@@ -4,8 +4,9 @@ title: Bundle Ontology
 description: Single source of truth for all concept types, relationship semantics, tag taxonomy, and validation rules in this OKF bundle.
 memory_tier: semantic
 confidence: 1.0
-okf_version: "0.1"
+okf_version: "0.2"
 timestamp: 2026-07-03T05:26:26Z
+generated: { by: human:adamson, at: 2026-08-10T00:00:00Z }
 tags: [ontology, system, governance]
 ---
 
@@ -26,9 +27,19 @@ and propose an addition via the ONTOLOGY_AGENT (see §EXTENDING).
 ## Required frontmatter — every concept, every type
 
 These are required of any `lowercase.md` concept document regardless of type, and are
-checked by V1 and by `scripts/okf_check.py`:
+checked by V9 and by `scripts/okf_check.py`:
 
-`type` · `title` · `description` · `timestamp` · `tags`
+`type` · `title` · `description` · `generated` · `tags`
+
+**Only `type` is required by the spec** (OKF v0.2 §4.1: a concept carrying just `type` is
+fully conformant). The other four are this kit's house rule for what it *emits* — Class C in
+`docs/OKF_DIVERGENCE.md`. We never reject a third-party bundle for missing them.
+
+**`generated` supersedes `timestamp`.** v0.2 §5.2 records a concept's last meaningful change
+as `generated: { by, at }`, where `by` is an actor (§Actor convention) and `at` is an ISO 8601
+datetime. §13.1 retires the bare `timestamp` key. During migration the checker accepts
+**either**, exactly as §13.1 permits a consumer to fall back to a legacy `timestamp`; new
+concepts MUST be written with `generated`.
 
 Anything a *particular* type needs beyond this list is declared in the **Required Fields**
 column below, and anything it must contain in its body is declared in **Required Sections**.
@@ -96,6 +107,98 @@ someone codes it.
 > do not write a new validation rule for a per-type requirement.
 
 *(empty at bundle initialisation — add as needed)*
+
+---
+
+# Spec Field Families (OKF v0.2)
+
+These are the spec's own fields, not this kit's. They are listed here because the registry
+is where an author looks, and because V9 and `scripts/okf_check.py` read this section. Full
+normative text is in the spec; section numbers below are v0.2.
+
+## Actor convention (§7)
+
+Any field naming an identity — `generated.by`, `verified[].by`, `sources[].author` — uses one
+of three forms. Trust tiering keys off the `human:` prefix, so it is not optional dressing:
+
+| Form | Use | Example |
+|---|---|---|
+| `<producer>/<version>` | an agent or tool | `enrichment_agent/claude-opus-5` |
+| `human:<id>` | a person | `human:adamson` |
+| `process:<id>` | an automated process | `process:claim-audit` |
+
+## Trust — `generated` and `verified` (§5.2)
+
+`generated` records how the current content was produced; `verified` records who has confirmed
+it against its sources. They are deliberately separate — who *wrote* a concept need not be who
+*confirmed* it.
+
+```yaml
+generated: { by: enrichment_agent/claude-opus-5, at: 2026-07-02T00:00:00Z }
+verified:
+  - { by: human:adamson, at: 2026-07-29T00:00:00Z }
+  - { by: process:claim-audit, at: 2026-07-29T00:00:00Z }
+```
+
+`generated.by` is REQUIRED within `generated`. A single verifier MAY be written as a bare
+`{ by, at }` mapping; a consumer MUST read that as a one-element list.
+
+## Trust tiers — derived, never stored (§5.3)
+
+| `verified` state | Tier |
+|---|---|
+| absent | `unverified` |
+| present, no `human:` actor | `machine-confirmed` |
+| present, any `human:` actor | `human-reviewed` |
+
+**This is the bundle's primary trust signal.** It is derived on read, so it cannot drift from
+what actually happened. v0.2 §5.1 declines to store a credibility score for the opposite
+reason: a stored number is subjective, unportable, and goes stale. See `docs/DECISIONS.md`
+D11 for how this relates to the T3 `confidence` field it supersedes.
+
+Certainty **tags** are a different axis and survive independently: they say how settled a
+*claim* is, not who verified the *document*. See §Tag Taxonomy.
+
+## Lifecycle — `status` and `stale_after` (§5.4, §5.5)
+
+```yaml
+status: stable        # draft | stable | deprecated — absent means stable
+stale_after: 2026-12-10   # YYYY-MM-DD; stale when today >= this date
+```
+
+`stale_after` is an absolute date, not a TTL, so staleness is a plain date comparison with no
+reference to when the concept was read. Use it on anything pinned to a commencement date, a
+review cycle, or a pending regulatory decision — that is precisely the material that goes
+quietly wrong.
+
+`status: deprecated` and this kit's `supersedes` / `superseded_by` are complementary, not
+alternatives: `status` marks the state, the reciprocal pair records what replaced it, and
+`archive/` is where it lives. Keep all three.
+
+## Provenance — `sources` (§5.1)
+
+Supersedes the `# Citations` body list (§13.1). Provenance moves into frontmatter, and
+per-claim attribution becomes a markdown footnote keyed to a `sources[].id`:
+
+```yaml
+sources:
+  - id: oaic-app1
+    resource: https://www.oaic.gov.au/privacy/australian-privacy-principles/...
+    title: APP Guidelines Chapter 1
+    author: process:oaic
+    last_modified: 2026-07-02
+```
+
+```markdown
+The duty is to take reasonable steps.[^oaic-app1]
+
+[^oaic-app1]: APP Guidelines Chapter 1
+```
+
+`resource` is REQUIRED within an entry; it may name a concrete artifact **or** a scope
+descriptor a consumer cannot follow. `id` is optional but SHOULD be present whenever the body
+cites the source. Labels are keyed rather than positional precisely because agents reorder
+these lists, and a positional index misattributes silently when they do.
 
 ---
 
@@ -238,7 +341,11 @@ to keep the directory structure navigable:
 
 # Validation Rules
 
-CONFORMANCE_AGENT checks these rules in addition to OKF v0.1 base conformance (§9):
+CONFORMANCE_AGENT checks these rules in addition to OKF v0.2 base conformance (**§11**).
+
+**These rules are this kit's dialect, not the spec.** Per `docs/DECISIONS.md` D11, a rule here
+may require *more* than §11; none may reject something §11 declares conformant. A finding
+means "outside this kit's dialect", never "non-conformant with OKF".
 
 | Rule | Check | Severity |
 |---|---|---|
@@ -255,6 +362,9 @@ CONFORMANCE_AGENT checks these rules in addition to OKF v0.1 base conformance (�
 | V11 | No relationship edge points into an archived or superseded concept | ERROR |
 | V12 | A concept's `confidence` falls inside the declared band of every tag it carries | WARNING |
 | V13 | No `authoritative` concept rests on `supporting` or `illustrative` material via `depends-on`, `part-of` or `derived-from` | WARNING |
+| V14 | Every `generated` / `verified` entry names an actor in the §Actor convention form, and `generated` carries `by` | ERROR |
+| V15 | `status` is one of `draft`/`stable`/`deprecated`, and `stale_after` is a `YYYY-MM-DD` date | ERROR |
+| V16 | Every concept carries `generated` (a bare legacy `timestamp` is a WARNING until migration completes, per §Required frontmatter) | WARNING |
 
 ## Conventions the checker depends on
 
@@ -283,8 +393,8 @@ concepts and are checked.
 
 ## Rule numbering — kit rules and bundle rules must not collide
 
-`V1`–`V9` are **reserved by this kit**. A bundle built from the kit inherits them and must not
-renumber, redefine, or drop them.
+`V1`–`V16` are **reserved by this kit**, and the reserved range grows as the kit adds rules.
+A bundle built from the kit inherits them and must not renumber, redefine, or drop them.
 
 A bundle adding its own rule MUST name it `V-<slug>` — `V-coverage-parity`,
 `V-scenario-parity` — never a bare number. A bare number in a domain bundle either shadows a
@@ -510,4 +620,5 @@ types in existing concept files should flag for migration, not auto-migrate.
 | 0.6 | 2026-08-09 | Relationships become traversable. Added §Writing a relationship so it can be traversed: a `# Related` bullet is an edge, the relationship is marked in bold from the closed ten, one bullet carries one relationship and any number of links, wrapped bullets are joined, and a bullet with links but no marker is an allowed cross-reference that produces no edge. **Relationships are directional and inverses are not registered** — `referenced-by`, `depended-on-by`, `superseded` fail the build; put the edge on the other concept instead. Keeps the vocabulary closed at ten, which is what makes an unregistered relationship detectable. Added V10 (every edge target resolves to a concept) and V11 (no edge points into an archived or superseded concept), both ERROR — V11 is the decay guard, since a superseded concept still cited in prose reads exactly like a live one and V6 only guards the frontmatter half. |
 | 0.7 | 2026-08-09 | Certainty becomes checkable without imposing a vocabulary. §Tag Taxonomy gains a **Certainty band** column; V12 enforces every declaration, so registering a certainty tag is a table cell rather than a rule. Bands ship empty — they are a domain's epistemics, not the kit's — with the instruction to set them to what the corpus actually holds, because a band tighter than authored practice fails a pile of concepts on day one and gets switched off. V12 is WARNING and stays one until a real bundle passes clean. **V3 rewritten**: a concept carrying `confidence` must show its working — either `confidence_sources` *or* a `# Citations` section. The old form presumed confidence was computed from a countable set; measured against the reference bundle, 0 of 104 concepts carry `confidence_sources` and 104 of 104 carry `# Citations`, so the rule was wrong for judgment-based corpora and was silently dropped rather than argued with. Registered V10 and V11 from v0.6 in the rules table. |
 | 0.8 | 2026-08-09 | CHECK_7 becomes a real set diff. §Deliverable Parity Contracts gains **`Record pattern`** (a one-group regex read against the deliverable's text) and **`Source key pattern`** (a one-group regex read against each source file's `title`, defaulting to the filename stem). The kit stays format-agnostic — a hand-authored artifact may be HTML, embedded JSON or a deck, and the contract declares how to read it rather than the kit guessing. The diff names what is missing on *each* side, so an orphan record in the deliverable is now detectable; filename matching never could see one. A contract with no `Record pattern` reports **SKIP, never PASS**. |
+| 1.0 | 2026-08-10 | **Re-based on OKF v0.2**, which supersedes v0.1 (spec §13). Added §Spec Field Families: the actor convention (§7), `generated`/`verified` (§5.2), derived trust tiers (§5.3), `status`/`stale_after` (§5.4–5.5), and `sources` with keyed footnote attribution (§5.1). §Required frontmatter now names `generated` in place of `timestamp`, with the legacy key accepted during migration exactly as §13.1 permits. Base conformance reference corrected from v0.1 §9 to v0.2 §11. Added **V14** (actor form), **V15** (lifecycle field shapes) and **V16** (WARNING: concept still on legacy `timestamp`). Trust tiers become the primary trust signal, superseding the stored `confidence` float in substance while the certainty *tags* survive on the separate axis D5 measured. Divergences are now sorted into debt / additive-extension / house-rule classes — see `docs/OKF_DIVERGENCE.md` and `docs/DECISIONS.md` D11 — because "migrate to v0.2" is three jobs with opposite right answers, and the naive reading deletes the Coverage Ledger and Authority Posture work for no reason. |
 | 0.9 | 2026-08-09 | Added §Authority Posture — `authoritative` / `supporting` / `provenance` / `illustrative`, declared **per area rather than per document** so new material inherits its posture from where it lands. A bundle can now say what it is the authority for and what it merely carries as context, without maintaining a per-file caveat. Added **V13** (WARNING): no authoritative concept may rest on supporting or illustrative material via `depends-on`, `part-of` or `derived-from` — authority resting on context is invisible in prose and obvious in the graph. `provenance` is exempt, since resting on a source document is what provenance is. Posture travels into the projection per concept, and the §Projection section gains an optional `Disclaimer` carried in the projection header, so a consuming application receives the caveat with the knowledge instead of being trusted to add it. |

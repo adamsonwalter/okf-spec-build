@@ -1,5 +1,5 @@
 # AGENTS.MD — OKF Bundle Orchestrator
-# Open Knowledge Format v0.1 | GoogleCloudPlatform/knowledge-catalog
+# Open Knowledge Format v0.2 | GoogleCloudPlatform/knowledge-catalog
 # Place this file at the root of any project where agents should maintain an OKF knowledge bundle.
 
 ---
@@ -23,13 +23,13 @@ If the `optional/` files are not present in the bundle root, treat every
 optional-layer instruction below (confidence scoring, memory tiers, supersession,
 contradiction/decay handling) as inert.
 
-See `docs/OKF_DIVERGENCE.md` for how this dialect relates to vanilla OKF v0.1.
+See `docs/OKF_DIVERGENCE.md` for how this dialect relates to vanilla OKF v0.2.
 
 ---
 
 ## CONFORMANCE REFERENCE
 
-OKF v0.1 hard rules (§9). A bundle is conformant when:
+OKF v0.2 hard rules (§11). A bundle is conformant when:
 1. Every non-reserved `.md` file has a parseable YAML frontmatter block.
 2. Every frontmatter block contains a non-empty `type` field. THIS IS THE ONLY REQUIRED FIELD.
 3. `index.md` files follow §6 format: sections + bullet lists, no frontmatter — EXCEPT the
@@ -398,7 +398,7 @@ INPUT: MUTATION_MANIFEST from ENRICHMENT_AGENT
 
 CRITICAL INVARIANT: index.md files MUST NOT contain YAML frontmatter.
   Exception: the bundle-root index.md MAY contain a single frontmatter key:
-    okf_version: "0.1"
+    okf_version: "0.2"
   This is the only permitted frontmatter in any index.md.
 
 ─── STATE: SCOPE ────────────────────────────────────────────────────────────────
@@ -413,7 +413,7 @@ ACTION:
 
   ═══ BUNDLE ROOT index.md FORMAT ═══════════════════════════════════════════════
   ---
-  okf_version: "0.1"
+  okf_version: "0.2"
   ---
 
   # <Directory or Bundle Name>
@@ -537,7 +537,7 @@ ACTION:
 
 ```
 AGENT: CONFORMANCE_AGENT
-ROLE: Audit the bundle for OKF v0.1 compliance. Produces a report; does not auto-repair.
+ROLE: Audit the bundle for OKF v0.2 compliance. Produces a report; does not auto-repair.
 
 ─── STATE: RUN THE CHECKER FIRST (mandatory) ────────────────────────────────────
 ACTION:
@@ -631,7 +631,7 @@ CHECK_9  For EVERY row in ontology.md §Source Coverage Contracts: open the name
 ACTION:
   Output a conformance report:
 
-  OKF v0.1 CONFORMANCE REPORT — <bundle name> — <date>
+  OKF v0.2 CONFORMANCE REPORT — <bundle name> — <date>
   ─────────────────────────────────────────────────────
   PASS  CHECK_1  All concept files have parseable frontmatter.
   FAIL  CHECK_3  /subdirectory/index.md contains frontmatter block (line 1–3).
@@ -763,7 +763,7 @@ GATE_8: Does the output file exist at the correct path and contain the sync head
 These rules apply at all times and override any agent instruction:
 
 1. **`type` is sacred.** Never write or update a concept .md without a `type` field.
-2. **`index.md` has no frontmatter** (except `okf_version: "0.1"` at bundle root only).
+2. **`index.md` has no frontmatter** (except `okf_version: "0.2"` at bundle root only).
 3. **`log.md` has no frontmatter.** Ever.
 4. **Link targets must exist on disk** before a link is injected. Never pre-link to planned files.
 5. **Conflict annotation, never silent overwrite.** Use `<!-- CONFLICT -->` comments.
@@ -870,7 +870,7 @@ When cloning this kit into a new domain repo (or starting from scratch):
     complete; see §Source Coverage Contracts in ontology.md.
 2. ENRICHMENT_AGENT extracts concepts → writes concept .md files.
 3. LINK_AGENT scans all newly written files → injects links.
-4. INDEX_AGENT generates root index.md (with `okf_version: "0.1"`) and any subdirectory index.md files.
+4. INDEX_AGENT generates root index.md (with `okf_version: "0.2"`) and any subdirectory index.md files.
 5. LOG_AGENT creates log.md with a `## YYYY-MM-DD` block recording all creations.
 6. PROJECTION_AGENT compiles `projections/<bundle-slug>-master.md` — the single file to upload
    to any cloud LLM Project. Check the Sync Status field in its header to know when to regenerate.
@@ -882,4 +882,4 @@ When cloning this kit into a new domain repo (or starting from scratch):
 8. Before every `git commit` or `git push`, follow §BUNDLE COMMIT CHECKLIST (Paths A–C).
    Say `"commit"` or `"push"` only after LOG_AGENT has appended to `log.md` for this session.
 
-Result: a conformant OKF v0.1 bundle in one pass, ready for both IDE and cloud LLM deployment.
+Result: a conformant OKF v0.2 bundle in one pass, ready for both IDE and cloud LLM deployment.

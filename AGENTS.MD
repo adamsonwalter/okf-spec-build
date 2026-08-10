@@ -41,6 +41,22 @@ Reserved filenames (must never be used as concept documents): `index.md`, `log.m
 
 ---
 
+## HOW A PERSON USES THIS
+
+The human speaks in plain words. **You run every command.** They should never be
+asked to open a terminal, type a script name, or remember a flag.
+
+  "make me a bundle for ASIC director duties"   -> BOOTSTRAP_AGENT
+  "there's data in inbox, go"                   -> ENRICHMENT_AGENT
+  "is this still consistent?"                   -> CONFORMANCE_AGENT
+  "rebuild the file I upload to my Project"     -> PROJECTION_AGENT
+  "give this bundle the newest machinery"       -> run update-kit.command, report
+
+If a step needs a shell command, run it and report the result. Handing a person
+a command to type is a failure of this file, not a limitation of the tool.
+
+---
+
 ## ORCHESTRATOR
 
 ```
@@ -66,6 +82,14 @@ ROUTING TABLE:
   fragment with no internal structure worth inventorying                     in NOTE MODE (STATE:
                                                                                INVENTORY skipped)
   Input is a query or read request                      →  dispatch CONSUMPTION_AGENT
+  Input asks to start a new bundle / corpus / knowledge base — "make a bundle
+  for X", "new corpus", "set this empty repo up", "I want a bundle on ASIC
+  director duties"                                      →  dispatch BOOTSTRAP_AGENT
+  Input says there is material waiting — "there's data in inbox", "ingest the
+  inbox", "process what I put in there", or names files already in inbox/
+                                                        →  dispatch ENRICHMENT_AGENT
+                                                           in SOURCE-DOCUMENT MODE,
+                                                           one source at a time
   Input is "validate" or "audit"                        →  dispatch CONFORMANCE_AGENT
   Input is "rebuild index" or "reindex"                 →  dispatch INDEX_AGENT (standalone)
   Input is "rebuild log" or "repair log"                →  dispatch LOG_AGENT (standalone)
@@ -105,6 +129,62 @@ SEQUENCING RULE:
   LOG_AGENT is NOT optional on the kit-maintenance path. Commits that change bundle
   files but leave log.md untouched since the last ## date block are a protocol violation.
   Never replace log.md body with a placeholder comment — historical entries are append-only.
+```
+
+---
+
+## AGENT 0 — BOOTSTRAP_AGENT
+
+```
+AGENT: BOOTSTRAP_AGENT
+ROLE: Create a new bundle, or adopt an existing empty repo, and leave it conformant.
+
+The human asks in plain words. You run the commands. Never hand a person a shell
+command as an instruction — if a command needs running, run it.
+
+--- STATE: LOCATE --------------------------------------------------------------
+ACTION:
+  Work out where the bundle goes.
+    - Human named a path or an existing empty repo  -> use it
+    - Human named only a subject ("ASIC director duties") -> propose a sibling
+      directory with a slug derived from it, and say where before creating it
+  Ask only if genuinely ambiguous. Do not interrogate.
+
+--- STATE: SCAFFOLD ------------------------------------------------------------
+ACTION:
+  Run the kit's scaffolder. Do not hand-assemble a bundle, and never copy
+  ontology.md from the kit into it — registries are inherited, and a copy is how
+  a rule went missing once (see docs/DECISIONS.md D1).
+
+      python3 scripts/okf_new_bundle.py <path> --title "<Title>" [--disclaimer "..."]
+
+  For an EXISTING empty repo, scaffold into it directly; the script refuses a
+  non-empty directory rather than overwriting anything.
+
+  It attaches the kit as a pinned submodule, writes a domain-only ontology, the
+  log, index, README, inbox/, both .command wrappers and CI, then runs the
+  checker. Report its result, not your expectation of it.
+
+--- STATE: DECLARE -------------------------------------------------------------
+ACTION:
+  Fill in what only a human can decide, then write it into ontology.md yourself:
+    - Authority Posture — what this bundle is the authority for, and what it
+      only carries as context. Ask in plain terms: "what is this the last word
+      on, and what is here just for background?"
+    - Projection Disclaimer — if the domain needs one.
+  Defaults are safe if the human does not want to decide yet: everything is
+  `supporting` until declared otherwise, which understates authority rather than
+  overstating it.
+
+--- STATE: HAND OVER -----------------------------------------------------------
+ACTION:
+  Tell the human, in plain words: the bundle exists, it passes its checks, and
+  where to put material. Then stop — do not begin ingesting until asked.
+
+GATE_0: Does `okf_check.py` exit 0 on the new bundle?
+  YES -> report ready.
+  NO  -> HALT. Report what failed. A bundle that is not conformant at birth is
+         one nobody can tell has broken later.
 ```
 
 ---

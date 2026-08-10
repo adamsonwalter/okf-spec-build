@@ -114,6 +114,16 @@ Full instructions, including what happens if you forget to push or pull: **`docs
 
 ### 1. Start a bundle
 
+**Just ask.** Connect an agent to this kit and say what you want:
+
+> *"Make me a bundle for ASIC director duties."*
+> *"Here's an empty repo — set it up as a bundle."*
+> *"There's data in inbox, ingest it."*
+
+The agent reads `AGENTS.MD` and runs everything. You should never have to open a terminal.
+
+Under the hood it runs:
+
 ```bash
 python3 scripts/okf_new_bundle.py ../my-new-corpus --title "My New Corpus"
 ```

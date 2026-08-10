@@ -670,6 +670,23 @@ class TestFrontmatterNesting(unittest.TestCase):
         self.assertIsNotNone(err)
         self.assertIn("nests under a list item", err)
 
+    def test_half_quoted_value_is_refused(self):
+        # `title: "X" — Y` is not valid YAML. The old parser silently produced
+        # `X" — Y` and shipped that unbalanced quote into a projection heading.
+        _, _, err = self.parse('title: "Arranged For" — Third-Party')
+        self.assertIsNotNone(err)
+        self.assertIn("closed quoted scalar", err)
+
+    def test_fully_quoted_value_is_fine(self):
+        fm, _, err = self.parse('title: "Arranged For — Third-Party"')
+        self.assertIsNone(err)
+        self.assertEqual(fm["title"], "Arranged For — Third-Party")
+
+    def test_unquoted_value_containing_quotes_is_fine(self):
+        fm, _, err = self.parse('description: He said "hello" then left')
+        self.assertIsNone(err)
+        self.assertEqual(fm["description"], 'He said "hello" then left')
+
     def test_flat_frontmatter_still_parses(self):
         fm, _, err = self.parse("title: T\ntags: [a, b]\nconfidence: 0.9")
         self.assertIsNone(err)

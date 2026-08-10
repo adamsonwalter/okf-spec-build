@@ -132,6 +132,14 @@ def _parse_block(lines, i, indent):
         key, value = key.strip(), value.strip()
         i += 1
         if value:
+            # A value opening with a quote must be a fully quoted scalar. The
+            # old flat parser mangled `title: "X" — Y` into `X" — Y` and shipped
+            # that unbalanced quote into a projection heading; neither parser
+            # errored, so the corpus carried invalid YAML no one could see.
+            if value[0] in "\"'" and not (len(value) >= 2 and value[-1] == value[0]):
+                raise _FrontmatterError(
+                    f"frontmatter line {lineno} opens with {value[0]} but is not a "
+                    f"closed quoted scalar — wrap the whole value: {content!r}")
             data[key] = _scalar(value)
             continue
         # Empty value: either a nested block below, or a genuinely empty scalar.

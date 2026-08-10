@@ -141,6 +141,24 @@ def read_log_dates(root: Path) -> tuple[str, str]:
 
 
 def strip_frontmatter(text: str) -> tuple[dict, str]:
+    """Frontmatter and body, delegating to the checker's parser.
+
+    This used to be a second, flat reader. OKF v0.2 nests `verified` (§5.2) and
+    `sources` (§5.1), so a flat reader hands back `verified` as a raw string and
+    trust_tier() silently reports every concept unverified — a wrong answer, not
+    a missing one. One parser, one definition (docs/DECISIONS.md D1).
+    """
+    try:
+        import okf_check
+    except ImportError:
+        okf_check = None
+    if okf_check is not None:
+        meta, body, error = okf_check.split_frontmatter(text)
+        if error is None and meta is not None:
+            return meta, body.lstrip("\n")
+        if error is not None:
+            return {}, text          # unreadable: the checker reports it, we skip it
+    # Fallback: flat parse, correct for v0.1-shaped frontmatter.
     if not text.startswith("---\n"):
         return {}, text
     end = text.find("\n---\n", 4)
@@ -154,7 +172,11 @@ def strip_frontmatter(text: str) -> tuple[dict, str]:
     return meta, text[end + 5:]
 
 
-def parse_tags(raw: str) -> list:
+def parse_tags(raw) -> list:
+    # The shared parser already returns a list; the flat fallback returns the
+    # raw "[a, b]" string. Accept both rather than depending on which ran.
+    if isinstance(raw, list):
+        return [str(t).strip().strip("'\"") for t in raw if str(t).strip()]
     raw = (raw or "").strip()
     if raw.startswith("[") and raw.endswith("]"):
         return [t.strip().strip("'\"") for t in raw[1:-1].split(",") if t.strip()]
@@ -199,15 +221,51 @@ def concept_title(meta: dict, path: Path) -> str:
     return meta.get("title") or path.stem.replace("-", " ").title()
 
 
+def trust_tier(meta: dict) -> str:
+    """Derived trust tier (§5.3), delegated to okf_check so there is one definition.
+
+    Falls back to 'unverified' if the checker is unavailable, matching the rest
+    of this module: a projection is never failed by an absent optional layer.
+    """
+    try:
+        import okf_check
+    except ImportError:
+        return "unverified"
+    return okf_check.trust_tier(meta)
+
+
+def updated_at(meta: dict) -> str:
+    """When the content last meaningfully changed.
+
+    OKF v0.2 §5.2 records this as `generated.at`; §13.1 retires the bare
+    `timestamp` and permits a consumer to fall back to it. Both are read so a
+    projection stays correct on either side of a bundle's migration.
+    """
+    generated = meta.get("generated")
+    if isinstance(generated, dict) and generated.get("at"):
+        return str(generated["at"])
+    return str(meta.get("timestamp") or "")
+
+
 def metadata_line(meta: dict) -> str:
     parts = [f"Type: {meta.get('type', 'Concept')}"]
+    # Trust tier is derived from `verified` (§5.3), never stored. Surfaced ahead
+    # of confidence because it says who confirmed the concept and when, which is
+    # auditable in a way a stored score is not.
+    tier = trust_tier(meta)
+    if tier != "unverified":
+        parts.append(f"Trust: {tier}")
     if meta.get("confidence"):
         parts.append(f"Confidence: {meta['confidence']}")
     tags = parse_tags(meta.get("tags", ""))
     if tags:
         parts.append(f"Tags: {', '.join(tags)}")
-    if meta.get("timestamp"):
-        parts.append(f"Updated: {meta['timestamp']}")
+    if meta.get("status") and meta["status"] != "stable":
+        parts.append(f"Status: {meta['status']}")
+    if meta.get("stale_after"):
+        parts.append(f"Stale after: {meta['stale_after']}")
+    if updated_at(meta):
+        parts.append(f"Updated: {updated_at(meta)}")
     return "*{}*".format(" | ".join(parts))
 
 
@@ -390,7 +448,15 @@ def build_structured(root, config, entries, scope, generated, log_head, ontology
             "resource": meta.get("resource", ""),
             "confidence": parse_confidence(meta.get("confidence", "")),
             "tags": parse_tags(meta.get("tags", "")),
-            "updated": meta.get("timestamp", ""),
+            "updated": updated_at(meta),
+            # OKF v0.2 trust and lifecycle, carried through to the application.
+            # trustTier is derived (§5.3), so it cannot disagree with `verified`.
+            "trustTier": trust_tier(meta),
+            "verified": meta.get("verified") or [],
+            "generatedBy": (meta.get("generated") or {}).get("by", "")
+                           if isinstance(meta.get("generated"), dict) else "",
+            "status": meta.get("status", "") or "stable",
+            "staleAfter": str(meta.get("stale_after") or ""),
             "sourcePath": str(path.relative_to(root)),
             "body": body.strip(),
             "citations": extract_citations(body),

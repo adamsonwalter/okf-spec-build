@@ -285,7 +285,13 @@ class Bundle:
         self.files = []
         self.nested_bundles = []
         for dirpath, dirnames, filenames in os.walk(self.root):
-            dirnames[:] = [d for d in dirnames if d not in EXCLUDED_DIRS]
+            # Sorted, not just filtered. os.walk yields directories in
+            # filesystem order, which differs between macOS and Linux, so an
+            # unsorted walk makes `files` — and therefore the edge order in a
+            # projection — machine-dependent. A projection built on a laptop
+            # then rebuilt in CI differed by ~1800 JSON lines with no concept
+            # changed, which no comparison could ever reconcile.
+            dirnames[:] = sorted(d for d in dirnames if d not in EXCLUDED_DIRS)
             # A subtree carrying its own ontology.md is a bundle in its own right
             # and is governed by that registry, not this one. Checking its
             # concepts against the parent registry reports differences as defects.

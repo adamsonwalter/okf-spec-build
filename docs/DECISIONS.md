@@ -330,8 +330,18 @@ projected **the kit** — which holds no knowledge and registers no artefacts, f
 skipped rather than failed. The previous directory-based guard had the same hole, and closing it
 means deciding what "should have projections" means — a registry question, not a CI one.
 
-**Wrong if.** CI goes green while a concept change sits uncommitted in `projections/`, or a
-repo's CI passes without having run the checks at all.
+**Third cause, found only because the first two were fixed.** `Bundle` walked with
+`os.walk` and sorted `filenames` but not `dirnames`, so directory order came from the
+filesystem — which macOS and the Linux runner disagree about. `Bundle.files` was therefore
+machine-dependent, and so was the edge order in a projection: the same corpus rebuilt in CI
+differed from the committed copy by **~1800 JSON lines with no concept changed**. A projection
+that is not reproducible across machines cannot be compared at all, so this had to be fixed
+before the step could mean anything. `dirnames` is now sorted in place, and a test drives the
+walk with the directory order **reversed** and asserts the result is unchanged.
+
+**Wrong if.** CI goes green while a concept change sits uncommitted in `projections/`, a
+repo's CI passes without having run the checks at all, or the same corpus produces different
+projections on two machines.
 
 ---
 

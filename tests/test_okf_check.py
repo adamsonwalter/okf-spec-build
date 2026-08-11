@@ -718,6 +718,50 @@ class TestTrustTiers(unittest.TestCase):
             "human-reviewed")
 
 
+class TestWalkIsDeterministic(BundleFixture):
+    """A projection must not depend on the filesystem's directory order.
+
+    os.walk yields directories in filesystem order, which differs between macOS
+    and the Linux CI runner. With dirnames unsorted, `Bundle.files` — and so the
+    edge order in a projection — was machine-dependent: a projection built on a
+    laptop and rebuilt in CI differed by ~1800 JSON lines with no concept
+    changed, and no comparison could ever reconcile that.
+    """
+
+    def build(self):
+        self.write("ontology.md", ONTOLOGY)
+        for d in ("alpha", "beta", "gamma"):
+            self.write(f"{d}/thing.md", CONCEPT)
+        self.write("root-thing.md", CONCEPT)
+
+    def files_with_walk_order(self, reverse):
+        real_walk = K.os.walk
+
+        def fake_walk(top, *a, **kw):
+            for dirpath, dirnames, filenames in real_walk(top, *a, **kw):
+                # Hand back the opposite order the OS would have given.
+                dirnames[:] = sorted(dirnames, reverse=reverse)
+                yield dirpath, dirnames, sorted(filenames, reverse=reverse)
+
+        K.os.walk = fake_walk
+        try:
+            return K.Bundle(self.root).files
+        finally:
+            K.os.walk = real_walk
+
+    def test_file_order_is_independent_of_filesystem_order(self):
+        self.build()
+        self.assertEqual(self.files_with_walk_order(reverse=False),
+                         self.files_with_walk_order(reverse=True))
+
+    def test_directories_are_visited_in_sorted_order(self):
+        self.build()
+        dirs = [os.path.basename(os.path.dirname(f))
+                for f in K.Bundle(self.root).files]
+        seen = [d for i, d in enumerate(dirs) if i == 0 or d != dirs[i - 1]]
+        self.assertEqual(seen[1:], sorted(seen[1:]))
+
+
 class TestStaleness(unittest.TestCase):
     """Spec §5.5. A plain date comparison, and advisory only (D12)."""
 

@@ -284,7 +284,7 @@ def main(argv=None):
         if source.exists():
             shutil.copy2(source, root / name)
             os.chmod(root / name, 0o755)
-    workflow = KIT / ".github" / "workflows" / "bundle-conformance.yml"
+    workflow = KIT / "templates" / "bundle-conformance.yml"
     if workflow.exists():
         shutil.copy2(workflow, root / ".github" / "workflows" / "conformance.yml")
 

@@ -80,10 +80,10 @@ Google spec (and why the ontology is our convention, not an OKF requirement), se
 | `reports/` | Loop health reports and decay reports. |
 | `archive/` | Superseded concepts (never deleted, always traceable). |
 | `playbook/` | Domain setup and operations guides — **includes `BUNDLE_COMMIT_CHECKLIST.md`**. |
-| `templates/` | Seeds for new bundles — **`log-domain-init.md`** for domain `log.md` on first clone. |
+| `templates/` | Seeds for new bundles — **`log-domain-init.md`** for domain `log.md`, and **`bundle-conformance.yml`**, the CI a generated bundle runs against its `okf-kit/` submodule. It lives here rather than in `.github/workflows/` because GitHub would otherwise run it *in the kit*, where there is no `okf-kit/` and it fails at the first step. |
 | `scripts/` | **Executable code, shipped with the kit so every generated bundle has it from day one.** `okf_project.py` builds a bundle's projections; `okf_check.py` runs CHECK_1–CHECK_9 and V1–V17 and exits non-zero; `okf_graph.py` extracts the typed relationship graph. |
 | `tests/` | Tests for `scripts/`. `python3 -m unittest discover -s tests`. |
-| `.github/workflows/` | CI. `conformance.yml` checks this kit; `bundle-conformance.yml` is the copy a generated bundle uses against its `okf-kit/` submodule. |
+| `.github/workflows/` | CI. `conformance.yml` checks this kit. The bundle workflow is a **template**, not a live workflow here — see `templates/`. |
 | `docs/OPERATING.md` | **How the kit and its bundles fit together day to day** — what to pull, when, and what breaks if you don't. |
 | `docs/DECISIONS.md` | **Read before changing a check.** Why each rule is shaped the way it is, what was rejected, and the measurements behind it. |
 | `docs/STATE_OF_PLAY.md` | **Start here after a break.** Where the work stands, what the v0.2 migration means, what is still open and whose call each item is. |

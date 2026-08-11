@@ -17,3 +17,10 @@ LOCAL_OVERRIDES.MD
 *.command
 __pycache__/
 *.pyc
+
+# The kit holds no knowledge, so it has no projections. Running
+# okf_project.py here writes artefacts AGENTS.MD does not register;
+# ignoring them stops a stray local run being committed, which is
+# exactly how they got in once. Bundles get their own .gitignore.
+projections/*-master.md
+projections/*-master.json

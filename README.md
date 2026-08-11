@@ -86,6 +86,7 @@ Google spec (and why the ontology is our convention, not an OKF requirement), se
 | `.github/workflows/` | CI. `conformance.yml` checks this kit; `bundle-conformance.yml` is the copy a generated bundle uses against its `okf-kit/` submodule. |
 | `docs/OPERATING.md` | **How the kit and its bundles fit together day to day** — what to pull, when, and what breaks if you don't. |
 | `docs/DECISIONS.md` | **Read before changing a check.** Why each rule is shaped the way it is, what was rejected, and the measurements behind it. |
+| `docs/STATE_OF_PLAY.md` | **Start here after a break.** Where the work stands, what the v0.2 migration means, what is still open and whose call each item is. |
 
 ---
 

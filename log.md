@@ -1,5 +1,9 @@
 # Bundle Update Log
 
+## 2026-08-11
+
+* **Kit**: [docs/STATE_OF_PLAY.md](docs/STATE_OF_PLAY.md) — new. A cold-read recount of where the OKF work stands after the 10 August v0.2 migration: what the three repos are each for now, why trust tiers replaced the stored `confidence` float, the format-versus-factory split between the spec and this kit, the three-class divergence rule that keeps the dialect on-spec, what can and cannot go upstream from the ontology, and the five open items ranked with whose call each one is. `CHANGELOG.md` and `log.md` record what changed; this records what it means and what is still undecided. Linked from `README.md`.
+
 ## 2026-08-10 (later)
 
 * **Kit**: [scripts/okf_check.py](scripts/okf_check.py) — staleness as a **warning that never gates**. Added `is_stale()` (the §5.5 predicate) and **V17**, WARNING by construction: §10.5 mandates refusal only for a failing attestation and offers "warn or refuse" for staleness, and §5.3 calls the family advisory signals rather than access control. Added `--today YYYY-MM-DD` so a horizon can be chosen against what it will actually stale out, rather than guessed. v2.12.0.

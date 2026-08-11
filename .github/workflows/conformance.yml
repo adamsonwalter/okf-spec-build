@@ -32,15 +32,27 @@ jobs:
 
       # A bundle's projections must match its concepts. Rebuilding and finding a
       # diff means someone committed concepts without regenerating.
+      #
+      # Guarded on a built master file, not on the directory being non-empty.
+      # This kit ships projections/README.md and projections/by-tag/README.md as
+      # documentation, so the old `ls -A | grep -v README` test saw `by-tag`
+      # (and any stray .DS_Store) and projected the KIT — which holds no
+      # knowledge and registers no artefacts, so it failed every run with
+      # "written but not registered: okf-spec-build-master.md".
       - name: Projections are up to date
         run: |
-          if [ -d projections ] && [ -n "$(ls -A projections 2>/dev/null | grep -v README)" ]; then
+          if ls projections/*-master.md >/dev/null 2>&1; then
             python3 scripts/okf_project.py . --quiet
-            if ! git diff --quiet -- projections; then
+            # Every projection embeds its build time. That stamp changes on
+            # every run and is not evidence anyone forgot to regenerate, so it
+            # is excluded from the comparison — a real concept change still
+            # fails. Without this the check could never pass, which is why it
+            # had failed on every run since the day it was added.
+            if ! git diff --quiet -I '^\| Generated \|' -I '^  "generated":' -- projections; then
               echo "::error::projections/ is stale — run scripts/okf_project.py and commit"
-              git diff --stat -- projections
+              git diff -I '^\| Generated \|' -I '^  "generated":' --stat -- projections
               exit 1
             fi
           else
-            echo "no projections in this bundle — nothing to compare"
+            echo "no built projections here — nothing to compare"
           fi

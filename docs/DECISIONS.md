@@ -294,6 +294,47 @@ solely because it is stale.
 
 ---
 
+## D13 · A build stamp is not drift
+
+**Decision.** The "projections are up to date" step compares projections **excluding the two
+build-time stamps** — `| Generated | … |` in the markdown and `"generated": …` in the JSON.
+
+**Evidence.** CI failed on **every run in every repo from the day it was introduced**
+(`4fb9f04`, 10 August 2026) and never once passed. The cause was not a bundle defect: every
+projection embeds the time it was built, so `git diff --quiet -- projections` after a rebuild is
+*always* non-empty. **The check was not capable of passing.**
+
+**Why that is the worst kind of broken.** This kit opens on the principle that *a check that did
+not run and a check that passed must never look the same afterwards*. A check that can only ever
+fail is the same failure wearing the opposite mask: it reports a problem that does not exist,
+every time, until people stop reading it — at which point a real drift lands in the noise and
+nobody looks. It had already been ignored for a day across three repos.
+
+**Verified both directions before shipping** — the guard that matters, given the check exists to
+catch one specific mistake:
+
+- Rebuild with no concept change → only the stamps differ → **passes**.
+- Edit a concept's `description` and do not rebuild → **still fails**, naming the file.
+
+**Rejected.** Making the stamp deterministic (deriving it from the corpus rather than the
+clock). It would work, but `generated` feeds the projection's own Sync Status, and changing what
+it means to fix a CI comparison is the tail wagging the dog.
+
+**Second, separate cause, same symptom.** The kit's own workflow guarded on
+`ls -A projections | grep -v README`, which saw `by-tag/` (and a stray `.DS_Store`) and so
+projected **the kit** — which holds no knowledge and registers no artefacts, failing with
+*"written but not registered: okf-spec-build-master.md"*. Now guarded on a built
+`projections/*-master.md`, which is the thing actually being checked.
+
+**Known hole, accepted.** A bundle that *should* have projections but has never built any is
+skipped rather than failed. The previous directory-based guard had the same hole, and closing it
+means deciding what "should have projections" means — a registry question, not a CI one.
+
+**Wrong if.** CI goes green while a concept change sits uncommitted in `projections/`, or a
+repo's CI passes without having run the checks at all.
+
+---
+
 ## Open, deliberately
 
 - **Penalty-table parity.** Removed from `privacy-act-okf`'s deliverable contract: its eight

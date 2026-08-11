@@ -1,5 +1,10 @@
 # Bundle Update Log
 
+## 2026-08-11 (later)
+
+* **Kit**: [.github/workflows/conformance.yml](.github/workflows/conformance.yml), [.github/workflows/bundle-conformance.yml](.github/workflows/bundle-conformance.yml) — **CI had never passed, in any repo, since the day it was added** (`4fb9f04`, 10 Aug). Two independent causes, both now fixed, neither a bundle defect. (1) Every projection embeds its build time, so `git diff --quiet -- projections` after a rebuild was *always* non-empty — the "projections are up to date" step **could not pass**. It now excludes the two build stamps and nothing else; verified both directions, so a real concept change still fails. (2) The kit's own guard, `ls -A projections | grep -v README`, saw `by-tag/` and projected **the kit** — which holds no knowledge and registers no artefacts, failing with "written but not registered". Now guarded on a built `projections/*-master.md`.
+* **Kit**: [docs/DECISIONS.md](docs/DECISIONS.md) — **D13**. A check that can only ever fail is the same failure as a check that never ran, wearing the opposite mask: it reports a problem that is not there until people stop reading it, and then a real drift lands in the noise. Records the both-directions verification and the one hole left open deliberately.
+
 ## 2026-08-11
 
 * **Kit**: [docs/STATE_OF_PLAY.md](docs/STATE_OF_PLAY.md) — new. A cold-read recount of where the OKF work stands after the 10 August v0.2 migration: what the three repos are each for now, why trust tiers replaced the stored `confidence` float, the format-versus-factory split between the spec and this kit, the three-class divergence rule that keeps the dialect on-spec, what can and cannot go upstream from the ontology, and the five open items ranked with whose call each one is. `CHANGELOG.md` and `log.md` record what changed; this records what it means and what is still undecided. Linked from `README.md`.

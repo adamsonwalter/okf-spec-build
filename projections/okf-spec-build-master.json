@@ -1,0 +1,438 @@
+{
+  "schema": "okf-spec-build/concepts",
+  "schemaVersion": 1,
+  "generated": "2026-08-11T00:19:56Z",
+  "scope": "master (all concepts)",
+  "logHead": "2026-08-11",
+  "logHeadAnyEntry": "2026-08-11",
+  "syncStatus": "Current",
+  "ontology": {
+    "types": [
+      {
+        "name": "Concept",
+        "description": "A discrete idea, entity, or domain term.",
+        "bodySections": "Schema, Examples, Citations",
+        "requiredSections": "—",
+        "requiredFields": "—"
+      },
+      {
+        "name": "Playbook",
+        "description": "Step-by-step procedure for a known task.",
+        "bodySections": "Trigger, Steps, Outcome",
+        "requiredSections": "—",
+        "requiredFields": "—"
+      },
+      {
+        "name": "Decision",
+        "description": "A recorded decision with context and rationale.",
+        "bodySections": "Context, Options, Chosen, Rationale",
+        "requiredSections": "—",
+        "requiredFields": "—"
+      },
+      {
+        "name": "API Endpoint",
+        "description": "An external or internal API surface.",
+        "bodySections": "Schema, Authentication, Examples",
+        "requiredSections": "—",
+        "requiredFields": "—"
+      },
+      {
+        "name": "Metric",
+        "description": "A measurable quantity with definition and source.",
+        "bodySections": "Formula, Source, Caveats",
+        "requiredSections": "—",
+        "requiredFields": "—"
+      },
+      {
+        "name": "Reference",
+        "description": "A pointer to an external source or document.",
+        "bodySections": "Summary, Citations",
+        "requiredSections": "Citations",
+        "requiredFields": "resource"
+      },
+      {
+        "name": "Glossary Term",
+        "description": "A domain vocabulary definition.",
+        "bodySections": "Definition, Related Terms",
+        "requiredSections": "—",
+        "requiredFields": "—"
+      },
+      {
+        "name": "Person",
+        "description": "A named individual (role-based, not PII).",
+        "bodySections": "Role, Expertise, Related Concepts",
+        "requiredSections": "—",
+        "requiredFields": "—"
+      },
+      {
+        "name": "Organisation",
+        "description": "A company, team, or institution.",
+        "bodySections": "Description, Relationships",
+        "requiredSections": "—",
+        "requiredFields": "—"
+      },
+      {
+        "name": "Event",
+        "description": "A time-bound occurrence.",
+        "bodySections": "Date, Participants, Outcome",
+        "requiredSections": "—",
+        "requiredFields": "—"
+      },
+      {
+        "name": "Dataset",
+        "description": "A named collection of data.",
+        "bodySections": "Schema, Source, Access",
+        "requiredSections": "—",
+        "requiredFields": "—"
+      },
+      {
+        "name": "System",
+        "description": "A software system, platform, or tool.",
+        "bodySections": "Description, API Endpoint refs",
+        "requiredSections": "—",
+        "requiredFields": "—"
+      },
+      {
+        "name": "Process",
+        "description": "A recurring business or technical workflow.",
+        "bodySections": "Steps, Actors, Inputs, Outputs",
+        "requiredSections": "—",
+        "requiredFields": "—"
+      },
+      {
+        "name": "Ontology",
+        "description": "This file. The bundle's type and relationship registry.",
+        "bodySections": "Human / ONTOLOGY_AGENT",
+        "requiredSections": "—",
+        "requiredFields": "—"
+      },
+      {
+        "name": "Stub",
+        "description": "A placeholder for a known gap. Confidence 0.0.",
+        "bodySections": "ENRICHMENT_AGENT (gap-finder)",
+        "requiredSections": "—",
+        "requiredFields": "—"
+      },
+      {
+        "name": "Inference",
+        "description": "A relationship or claim derived by an agent from existing concepts.",
+        "bodySections": "CONSUMPTION_AGENT",
+        "requiredSections": "—",
+        "requiredFields": "inferred_from"
+      },
+      {
+        "name": "Agent Instruction",
+        "description": "An instruction file for agent behavior (ALL CAPS .md files).",
+        "bodySections": "Human",
+        "requiredSections": "—",
+        "requiredFields": "—"
+      },
+      {
+        "name": "Loop Health Report",
+        "description": "Periodic diagnostic snapshot of bundle health metrics.",
+        "bodySections": "LOG_AGENT",
+        "requiredSections": "—",
+        "requiredFields": "—"
+      },
+      {
+        "name": "Decay Report",
+        "description": "List of stale, isolated, or low-confidence concepts.",
+        "bodySections": "CONFORMANCE_AGENT",
+        "requiredSections": "—",
+        "requiredFields": "—"
+      },
+      {
+        "name": "Contradiction Record",
+        "description": "A logged contradiction event and its resolution.",
+        "bodySections": "ENRICHMENT_AGENT",
+        "requiredSections": "—",
+        "requiredFields": "—"
+      },
+      {
+        "name": "Coverage Ledger",
+        "description": "An exhaustive inventory of every named structural unit in a source document (Box/Table/Figure/callout/appendix/quote), mapped to the bundle file(s) that capture it, with a Status column (Captured / Partial / N/A / Not yet checked). Built by ENRICHMENT_AGENT's `STATE: INVENTORY` on every SOURCE-DOCUMENT MODE ingestion — the mechanical completeness gate that checks whether everything was captured, distinct from correctness checks on what *is* captured.",
+        "bodySections": "ENRICHMENT_AGENT (STATE: INVENTORY)",
+        "requiredSections": "—",
+        "requiredFields": "—"
+      }
+    ],
+    "relationships": [
+      {
+        "name": "depends-on",
+        "direction": "A → B",
+        "prose": "\"requires\", \"built on\", \"cannot run without\"",
+        "example": "System A depends on API B"
+      },
+      {
+        "name": "implements",
+        "direction": "A → B",
+        "prose": "\"implements\", \"is an instance of\", \"follows\"",
+        "example": "Playbook implements Process"
+      },
+      {
+        "name": "contradicts",
+        "direction": "A ↔ B",
+        "prose": "\"disputes\", \"conflicts with\", \"challenges\"",
+        "example": "Decision A contradicts Metric B"
+      },
+      {
+        "name": "supersedes",
+        "direction": "A → B",
+        "prose": "\"replaces\", \"supersedes\", \"updates\"",
+        "example": "Concept A supersedes Concept B"
+      },
+      {
+        "name": "references",
+        "direction": "A → B",
+        "prose": "\"see\", \"refer to\", \"documented in\"",
+        "example": "Playbook references Dataset"
+      },
+      {
+        "name": "related-to",
+        "direction": "A ↔ B",
+        "prose": "\"related\", \"connected\", \"associated\"",
+        "example": "Concept A related to Concept B"
+      },
+      {
+        "name": "part-of",
+        "direction": "A → B",
+        "prose": "\"belongs to\", \"is part of\", \"component of\"",
+        "example": "Metric is part of System"
+      },
+      {
+        "name": "derived-from",
+        "direction": "A → B",
+        "prose": "\"derived from\", \"based on\", \"calculated using\"",
+        "example": "Metric derived from Dataset"
+      },
+      {
+        "name": "authored-by",
+        "direction": "A → B",
+        "prose": "\"authored by\", \"written by\", \"maintained by\"",
+        "example": "Playbook authored by Person"
+      },
+      {
+        "name": "governs",
+        "direction": "A → B",
+        "prose": "\"governs\", \"constrains\", \"regulates\"",
+        "example": "Ontology governs all Concepts"
+      }
+    ],
+    "tags": [
+      {
+        "name": "system",
+        "meaning": "Bundle infrastructure: ontology, instructions, health reports",
+        "certaintyBand": ""
+      },
+      {
+        "name": "governance",
+        "meaning": "Policies, rules, constraints",
+        "certaintyBand": ""
+      },
+      {
+        "name": "stub",
+        "meaning": "Incomplete / placeholder concept",
+        "certaintyBand": ""
+      },
+      {
+        "name": "review-required",
+        "meaning": "Needs human or agent verification",
+        "certaintyBand": ""
+      },
+      {
+        "name": "archived",
+        "meaning": "Superseded or deprecated",
+        "certaintyBand": ""
+      },
+      {
+        "name": "inference",
+        "meaning": "Agent-derived, not directly sourced",
+        "certaintyBand": ""
+      },
+      {
+        "name": "disputed",
+        "meaning": "Contains an unresolved contradiction",
+        "certaintyBand": ""
+      },
+      {
+        "name": "coverage",
+        "meaning": "A Coverage Ledger or other bundle-completeness audit artifact",
+        "certaintyBand": ""
+      }
+    ],
+    "validationRules": [
+      {
+        "id": "V1",
+        "check": "Every concept's `type` is registered in this Ontology",
+        "severity": "ERROR"
+      },
+      {
+        "id": "V2",
+        "check": "Every concept's `tags` are registered in this Ontology",
+        "severity": "WARNING"
+      },
+      {
+        "id": "V3",
+        "check": "A concept carrying `confidence` shows its working — either `confidence_sources`, or a `# Citations` section",
+        "severity": "WARNING"
+      },
+      {
+        "id": "V4",
+        "check": "Every `type: Stub` concept is in the `stubs/` subdirectory, **except** an archived stub, which lives in `archive/` per §Concept Hierarchy Rules 5",
+        "severity": "WARNING"
+      },
+      {
+        "id": "V5",
+        "check": "Every `type: Inference` has `inferred_from` listing at least one source",
+        "severity": "ERROR"
+      },
+      {
+        "id": "V6",
+        "check": "No concept has `superseded_by` without a reciprocal `supersedes` in the target",
+        "severity": "ERROR"
+      },
+      {
+        "id": "V7",
+        "check": "Every contradiction comment `<!-- CONFLICT -->` has a corresponding LOG entry",
+        "severity": "WARNING"
+      },
+      {
+        "id": "V8",
+        "check": "This `ontology.md` file has `memory_tier: semantic` and `confidence: 1.0",
+        "severity": "ERROR"
+      },
+      {
+        "id": "V9",
+        "check": "Every concept carries the universal required frontmatter, plus its type's `Required Fields` and `Required Sections` from §Type Registry",
+        "severity": "ERROR"
+      },
+      {
+        "id": "V10",
+        "check": "Every relationship edge target resolves to a concept in this bundle",
+        "severity": "ERROR"
+      },
+      {
+        "id": "V11",
+        "check": "No relationship edge points into an archived or superseded concept",
+        "severity": "ERROR"
+      },
+      {
+        "id": "V12",
+        "check": "A concept's `confidence` falls inside the declared band of every tag it carries",
+        "severity": "WARNING"
+      },
+      {
+        "id": "V13",
+        "check": "No `authoritative` concept rests on `supporting` or `illustrative` material via `depends-on`, `part-of` or `derived-from",
+        "severity": "WARNING"
+      },
+      {
+        "id": "V14",
+        "check": "Every `generated` / `verified` entry names an actor in the §Actor convention form, and `generated` carries `by",
+        "severity": "ERROR"
+      },
+      {
+        "id": "V15",
+        "check": "status` is one of `draft`/`stable`/`deprecated`, and `stale_after` is a `YYYY-MM-DD` date",
+        "severity": "ERROR"
+      },
+      {
+        "id": "V16",
+        "check": "Every concept carries `generated` (a bare legacy `timestamp` is a WARNING until migration completes, per §Required frontmatter)",
+        "severity": "WARNING"
+      },
+      {
+        "id": "V17",
+        "check": "A concept past its `stale_after` review horizon. **WARNING by construction — never promote to ERROR** (§5.3, §10.5; see D12)",
+        "severity": "WARNING"
+      }
+    ],
+    "deprecatedTypes": [
+      {
+        "name": "*(none at initialisation)*",
+        "note": "—"
+      }
+    ],
+    "version": "1.0",
+    "versionAsAt": "2026-08-10"
+  },
+  "disclaimer": "",
+  "conceptCount": 2,
+  "concepts": [
+    {
+      "title": "Optional Cognitive-Layer Field Extensions (T3 only)",
+      "type": "Ontology",
+      "description": "Definitions for the opt-in frontmatter fields and conformance rules used only by liability-grade (T3) bundles that load LLM_WIKI.MD and FEEDBACK_LOOP.MD.",
+      "resource": "",
+      "confidence": 1.0,
+      "tags": [
+        "ontology",
+        "system",
+        "governance",
+        "optional"
+      ],
+      "updated": "2026-06-24",
+      "trustTier": "unverified",
+      "verified": [],
+      "generatedBy": "",
+      "status": "stable",
+      "staleAfter": "",
+      "stale": false,
+      "staleEvaluatedAt": "2026-08-11",
+      "sourcePath": "optional/ontology-ext.md",
+      "body": "> This file is part of the OPTIONAL cognitive layer. It is NOT copied into a\n> default (T1/T2) bundle. Load it only when a domain is liability-grade (T3) and\n> you have also pulled in `optional/LLM_WIKI.MD` and `optional/FEEDBACK_LOOP.MD`.\n> Core bundles do not recognise these fields and must not be validated against\n> the rules below.\n\n# Optional frontmatter fields\n\n| Field | Type | Meaning | Required by |\n|---|---|---|---|\n| `confidence` | float 0.0–1.0 | Agent's confidence in the concept's claims. | LLM_WIKI memory model |\n| `confidence_sources` | list | Evidence supporting the confidence value. | paired with `confidence` |\n| `memory_tier` | enum (`semantic`/`episodic`/`working`/`archival`) | Memory tier per LLM_WIKI. | LLM_WIKI |\n| `supersedes` / `superseded_by` | filename refs | Supersession links for versioned knowledge. | supersession protocol |\n| `inferred_from` | list | Source concepts an `Inference` was derived from. | CONSUMPTION_AGENT |\n| `review_required` | bool | Flags pending ontology extension review. | ONTOLOGY_AGENT |\n\n# Conformance rules gated to this layer\n\nThese move OUT of core `ontology.md` and apply ONLY when this extension is loaded:\n\n| Rule | Check | Severity |\n|---|---|---|\n| V3 | No concept has `confidence` without `confidence_sources` | WARNING |\n| V5 | Every `type: Inference` has `inferred_from` with ≥1 source | ERROR |\n| V6 | No `superseded_by` without a reciprocal `supersedes` in the target | ERROR |\n| V7 | Every `<!-- CONFLICT -->` comment has a corresponding LOG entry | WARNING |\n| V8 | This file and core `ontology.md` carry `memory_tier: semantic`, `confidence: 1.0` | ERROR |\n\nCore bundles keep only V1 (type registered), V2 (tags registered), and V4\n(stubs in `stubs/`). Everything above is opt-in.",
+      "citations": [],
+      "authorityPosture": "supporting"
+    },
+    {
+      "title": "Wiki Evolution",
+      "type": "Loop Health Report",
+      "description": "Chronological record of all self-improvement events in this bundle. Updated by LOG_AGENT on every self-improvement event.",
+      "resource": "",
+      "confidence": 1.0,
+      "tags": [
+        "system",
+        "governance"
+      ],
+      "updated": "2026-06-19T00:00:00Z",
+      "trustTier": "unverified",
+      "verified": [],
+      "generatedBy": "",
+      "status": "stable",
+      "staleAfter": "",
+      "stale": false,
+      "staleEvaluatedAt": "2026-08-11",
+      "sourcePath": "reports/wiki-evolution.md",
+      "body": "# Wiki Evolution\n\n## Summary\n\n| Metric | Value |\n|---|---|\n| Total self-improvement events | 0 |\n| Tier promotions | 0 |\n| Inferences added | 0 |\n| Contradictions resolved | 0 |\n| Stubs filled | 0 |\n| Ontology extensions | 0 |\n| Confidence thresholds crossed | 0 |\n| Graph densification events | 0 |\n| Bundle started | 2026-06-19 |\n| Last self-improvement | — |\n\n## Event Log (newest first)\n\n*(no self-improvement events yet — awaiting first ingestion cycle)*",
+      "citations": [],
+      "authorityPosture": "supporting"
+    }
+  ],
+  "edgeCount": 4,
+  "edges": [
+    {
+      "source": "stubs/certainty-vocabulary-reconciliation.md",
+      "target": "ontology.md",
+      "relationship": "depends-on",
+      "line": 72
+    },
+    {
+      "source": "stubs/certainty-vocabulary-reconciliation.md",
+      "target": "stubs/relationship-graph-extraction.md",
+      "relationship": "related-to",
+      "line": 73
+    },
+    {
+      "source": "stubs/relationship-graph-extraction.md",
+      "target": "ontology.md",
+      "relationship": "depends-on",
+      "line": 67
+    },
+    {
+      "source": "stubs/relationship-graph-extraction.md",
+      "target": "stubs/certainty-vocabulary-reconciliation.md",
+      "relationship": "related-to",
+      "line": 68
+    }
+  ]
+}

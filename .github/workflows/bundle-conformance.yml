@@ -27,11 +27,16 @@ jobs:
       - name: Rebuild projections
         run: python3 okf-kit/scripts/okf_project.py . --quiet
 
+      # Every projection embeds its build time. That stamp changes on every run
+      # and is not evidence that anyone forgot to regenerate, so it is excluded
+      # from the comparison — a real concept change still fails, which is the
+      # only thing this step is for. Without the exclusion the check could never
+      # pass, which is why it failed on every run from the day it was added.
       - name: Projections are up to date
         run: |
-          if ! git diff --quiet -- projections; then
+          if ! git diff --quiet -I '^\| Generated \|' -I '^  "generated":' -- projections; then
             echo "::error::projections/ is stale — run ./check.command and commit"
-            git diff --stat -- projections
+            git diff -I '^\| Generated \|' -I '^  "generated":' --stat -- projections
             exit 1
           fi
 

@@ -27,12 +27,53 @@ required. Everything remaining is a judgment call, listed at the bottom.
 |---|---|---|
 | **okf-spec-build** (the kit) | v2.12.0, ontology v1.0, tracks OKF v0.2 | The **machinery**. Checks, projections, agent instructions, the registry. Holds no knowledge. |
 | **privacy-act-okf** (the bundle) | Migrated, conformant, 0 errors | The **knowledge**. 104 projected concepts. Pins the kit at `59a943b`. |
-| **google-okf-generator** | Rolled back to `f13c49b` (pre-ontology) | A **spec-conformance reference** for OKF v0.2. Not a second builder — do not run corpora through it. |
+| **google-okf-generator** | `dcc09ce` | The **OKF v0.2 format engine**: validator, trust/staleness derivation, job model. Now in live use against a real corpus — see the open question below. |
 
 On `google-okf-generator`: the ontology layer added on 6–9 August was removed and archived as
-tag `archive/ontology-attempt`. Two genuine bug fixes from that period were kept. Its value now
-is as a clean, literal v0.2 implementation to check the kit's reading against — its spec
-citations were verified accurate section by section.
+tag `archive/ontology-attempt`. Two genuine bug fixes from that period were kept. It is a
+clean, literal v0.2 implementation — its spec citations were verified accurate section by
+section — and on 11 August it was also used to build a real corpus, which is what raises the
+question below.
+
+---
+
+## Open question — should the generator supersede the kit?
+
+Raised 11 August after someone applied `google-okf-generator` to a real corpus and hit two
+engine bugs (both since fixed: `dcc09ce`). The docs had said it was a reference, not a builder.
+It is now demonstrably a builder, so the two-builders risk `ARCHITECTURE.md` exists to prevent
+is live.
+
+**Measured answer today: it cannot supersede the kit.** The generator implements the *format*
+completely and the *production system* not at all. Retiring the kit right now would break, in
+`privacy-act-okf`:
+
+| What breaks | Scale | Kit component with no generator equivalent |
+|---|---|---|
+| Projections your live apps consume | 104 concepts, `.md` + `.json` | `okf_project.py` |
+| Typed relationship graph | 388 edges | `okf_graph.py`, the ten markers |
+| Ingestion completeness | 3 Coverage Ledgers | `STATE: INVENTORY`, `GATE_5`, CHECK_9 |
+| Authority scope | 12 declared rows | Authority Posture, V13 |
+| Bundle CI and `check.command` | both call `okf-kit/scripts/*` | — |
+| Hand-authored artifact drift | — | Parity Contracts, CHECK_7 |
+| Bundle scaffolding, agent pipeline | — | `okf_new_bundle.py`, `AGENTS.MD` |
+
+Grep confirms the asymmetry: `projection` 0 files vs 23, `coverage` 0 vs 14, `authority
+posture` 0 vs 12, `parity contract` 0 vs 12, `inventory` 0 vs 11.
+
+**So "supersede" is a port, not a switch.** Three honest options:
+
+1. **Keep both, boundary written down** — generator owns format conformance, kit owns
+   production. Cheapest, and what the two currently are. Requires the boundary to be stated
+   where a reader meets it, not just here.
+2. **Port the kit's production layer onto the generator's engine**, then retire the kit's
+   `okf_check.py`. Real work — the seven rows above — but it ends with one system.
+3. **Port the generator's v0.2 engine into the kit** and retire the generator. Smaller: the
+   kit already has the production layer, and its own v0.2 support now overlaps the generator's.
+
+There is no urgency, and no decision recorded yet. What must not happen is both being edited
+as builders without one of these being chosen — that is precisely the drift the architecture
+was written to prevent.
 
 ---
 

@@ -71,9 +71,80 @@ posture` 0 vs 12, `parity contract` 0 vs 12, `inventory` 0 vs 11.
 3. **Port the generator's v0.2 engine into the kit** and retire the generator. Smaller: the
    kit already has the production layer, and its own v0.2 support now overlaps the generator's.
 
-There is no urgency, and no decision recorded yet. What must not happen is both being edited
-as builders without one of these being chosen — that is precisely the drift the architecture
-was written to prevent.
+**Chosen: option 3** (11 August). Port the generator's v0.2 engine into the kit, then retire
+the generator as a builder.
+
+The deciding asset is `ontology.md` — **671 lines, v1.0**, live in the kit: 21 registered
+types, the 10-relationship taxonomy, 8 system tags, **V1–V17**, plus Authority Posture,
+Deliverable Parity Contracts, Source Coverage Contracts and the ONTOLOGY_AGENT extension
+protocol. Porting the engine *into* the kit moves code onto that existing registry.
+
+**Do not read this as "the generator had no ontology."** It had a substantial one, now archived
+at tag `archive/ontology-attempt`, and it is a *different kind of artefact* — see the section
+below. Whether parts of it should come back is open, and is not settled by the direction of the
+port.
+
+What the port actually involves (nothing is started):
+
+| From the generator | Into the kit | Note |
+|---|---|---|
+| `derive.py` — trust tiers, staleness, status | already exists as `trust_tier()` / `is_stale()` | **overlaps; reconcile, do not duplicate** |
+| `validate.py` §11 rule codes (`C1`, `C2`, `F_*`, `S_*`) | alongside CHECK_1–9 / V1–V17 | two rule vocabularies must become one |
+| `yaml_lite.py` | kit's `split_frontmatter` | generator's is the more complete parser |
+| Attested Computation (§10) | absent from the kit | the only wholly new capability |
+| `job.py` / `okf.yaml`, engine-job-consumer | absent | decide whether the kit wants a job model at all |
+
+**Do the rule-vocabulary reconciliation first and on its own.** Two sets of codes for the same
+conformance criteria is how a check ends up enforced twice with different severities, or
+believed to be enforced and not running — the failure D13 already caught once here.
+
+Until the port lands, the boundary stands: the generator is the format reference, the kit is
+the builder. What must not happen is both being edited as builders — that is precisely the
+drift the architecture was written to prevent.
+
+---
+
+## Reopened — was the archived ontology the better one?
+
+Raised 11 August. Worth taking seriously, because the two "ontologies" are not competing
+versions of one thing and the earlier rollback did not compare them on the merits.
+
+| | Kit `ontology.md` | Archived `archive/ontology-attempt` |
+|---|---|---|
+| What it is | a **governance registry**, 671 lines of prose | a **typed-graph mechanism**, 775 lines of code + 235 coverage + a 107-line schema |
+| Relationships | 10 markers in `# Related` prose, regex-extracted | instance-level `edges: [{relation, to}]` in frontmatter, schema-checked |
+| Constraints | direction only | `from`/`to` classes, `cardinality`, `inverse` |
+| Reverse traversal | none — D2 rejects inverses; put the edge on the other concept | generated `derived_edges` index; build rejects a stale one |
+| World assumption | open — an unmarked bullet is a WARNING | **closed** (`closed: true`) — absence of an edge is a *fact* |
+| Instance resolution | none; classes are document genres | `identity`, `title_key`, `properties` — an instance can be *resolved*, not just categorised |
+| Completeness of answers | none | **competency questions** with traversal paths, enforced by the build |
+
+**Two things the archived layer does that the kit cannot do at all.**
+
+*Instance resolution.* Its own closing note says the analytics classes are document genres, and
+that "a domain-entity ontology — provisions of an instrument, contract clauses, obligations —
+should instead give each class an `identity`, a `title_key`, and `properties`." That is
+`privacy-act-okf` exactly. The kit classifies by genre (`Legal Provision`, `Reference`), which
+is the mode that note calls *merely categorised*.
+
+*Competency questions.* `coverage.py` declares the questions a bundle is warranted to answer,
+each with the traversal path that answers it, and the build checks the structure exists — no
+model, no answer evaluation. It also carries `out_of_scope` entries **with a stated reason**.
+That is a mechanised form of the operative constraint recorded in D4: *a reader must be able to
+explain why they are not seeing something.* Nothing in the kit does this. Its worked examples
+are privacy-domain — `is-app-entity`, `not-small-business-operator`, `s-6d`, penalty units — so
+it was aimed at this corpus from the start.
+
+**What the rollback argument actually covered.** It was that the marker taxonomy *described
+existing practice* (323 of 332 bullets already used a bold marker before the rule was written)
+while typed edges *legislated new structure*. That argument still stands — **for the
+relationship layer**. It never addressed the coverage layer, which has no counterpart here.
+
+**So the piece most worth reconsidering is competency-question coverage, not the closed typed
+edge graph.** Test it the way this kit tests everything (D3, D4): measure the corpus first. The
+question is whether there are answers `privacy-act-okf` is expected to give that its 388
+prose-marker edges cannot support — if yes, the coverage layer earns its way back; if no, the
+rollback was right and should be left alone.
 
 ---
 

@@ -87,6 +87,7 @@ Google spec (and why the ontology is our convention, not an OKF requirement), se
 | `docs/OPERATING.md` | **How the kit and its bundles fit together day to day** — what to pull, when, and what breaks if you don't. |
 | `docs/DECISIONS.md` | **Read before changing a check.** Why each rule is shaped the way it is, what was rejected, and the measurements behind it. |
 | `docs/STATE_OF_PLAY.md` | **Start here after a break.** Where the work stands, what the v0.2 migration means, what is still open and whose call each item is. |
+| `docs/HANDOVER_ENGINE_PORT.md` | **Hand this to the next coder.** The decided-but-unstarted engine port, the universal-mechanism / per-bundle-vocabulary principle behind it, and the rules not to break. |
 
 ---
 

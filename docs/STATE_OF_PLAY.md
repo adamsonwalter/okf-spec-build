@@ -98,6 +98,12 @@ What the port actually involves (nothing is started):
 conformance criteria is how a check ends up enforced twice with different severities, or
 believed to be enforced and not running — the failure D13 already caught once here.
 
+**The executable version of this is [`HANDOVER_ENGINE_PORT.md`](HANDOVER_ENGINE_PORT.md)** —
+ordered work packages with acceptance criteria, written for whoever does the port. It also
+carries the principle that settles whether one system can serve both legislation and company
+knowledge: **universal mechanism, per-bundle vocabulary**, which is D1 applied to the ontology
+layer. Determinism needs a *declaration*, not a universal taxonomy.
+
 Until the port lands, the boundary stands: the generator is the format reference, the kit is
 the builder. What must not happen is both being edited as builders — that is precisely the
 drift the architecture was written to prevent.
